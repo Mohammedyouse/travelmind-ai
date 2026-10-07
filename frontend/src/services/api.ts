@@ -109,12 +109,19 @@ export type AdminStats = {
 }
 
 type AuthResponse = { user: User; token: string }
+const defaultUrl = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ? ''
+    : 'http://localhost:8000'
+
 const rawBaseUrl = (typeof window !== 'undefined' && (window as any).__RUNTIME_CONFIG__?.VITE_API_BASE_URL)
     || import.meta.env.VITE_API_BASE_URL
-    || 'http://localhost:8000'
-const API_BASE_URL = rawBaseUrl.startsWith('http://') || rawBaseUrl.startsWith('https://')
-    ? rawBaseUrl
-    : `https://${rawBaseUrl}`
+    || defaultUrl
+
+const API_BASE_URL = !rawBaseUrl
+    ? ''
+    : (rawBaseUrl.startsWith('http://') || rawBaseUrl.startsWith('https://'))
+        ? rawBaseUrl
+        : `https://${rawBaseUrl}`
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
     const headers = new Headers(options.headers)
