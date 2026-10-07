@@ -1,0 +1,128 @@
+{
+  "name": "03 - Hotel Research",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/hotels",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "hotel-webhook",
+      "name": "Hotel Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nreturn [{\n  json: {\n    destination: body.destination,\n    checkIn: body.check_in || body.departure_date,\n    checkOut: body.check_out || body.return_date,\n    guests: Number(body.travelers || body.guests || 1),\n    currency: body.currency || 'USD',\n    budgetPerNight: body.nightly_budget || 200\n  }\n}];"
+      },
+      "id": "parse-hotel-params",
+      "name": "Parse Stay Requirements",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/hotels/search' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 12000
+        }
+      },
+      "id": "query-hotel-service",
+      "name": "Query Accommodation Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const hotels = $json.hotels || $json.data?.hotels || [];\nreturn [{\n  json: {\n    status: 'ok',\n    destination: $('Parse Stay Requirements').first().json.destination,\n    totalHotels: hotels.length,\n    hotels: hotels,\n    source: $json.source || 'verified_destination_hotels',\n    retrievedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-hotel-output",
+      "name": "Format Hotel Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Hotel Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Stay Requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Stay Requirements": {
+      "main": [
+        [
+          {
+            "node": "Query Accommodation Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Accommodation Service": {
+      "main": [
+        [
+          {
+            "node": "Format Hotel Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "hotels"
+    },
+    {
+      "name": "travelmind"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-03"
+}

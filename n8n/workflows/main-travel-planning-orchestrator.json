@@ -1,0 +1,203 @@
+{
+  "name": "01 - Main Travel Planning Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travel-plan-orchestrator",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "webhookId": "travel-plan-orchestrator"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst correlationId = $json.headers?.['x-correlation-id'] || 'corr-' + Date.now();\nreturn [{\n  json: {\n    correlationId: correlationId,\n    tripSpec: {\n      origin: body.origin,\n      destination: body.destination,\n      departure_date: body.departure_date,\n      return_date: body.return_date,\n      travelers: body.travelers || 1,\n      budget: body.budget,\n      currency: body.currency || 'USD',\n      interests: body.interests || []\n    },\n    startedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "validate-enrich",
+      "name": "Validate & Enrich Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/dispatch/research' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            },
+            {
+              "name": "X-Correlation-ID",
+              "value": "={{ $json.correlationId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.tripSpec) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "call-research-api",
+      "name": "Call TravelMind Research API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equal",
+              "value2": "ok"
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "Research Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: 'success',\n    correlationId: $('Validate & Enrich Input').first().json.correlationId,\n    tripId: $json.trip_id,\n    planResults: $json.results,\n    summary: $json.summary,\n    completedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Plan Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/error-handler' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ correlationId: $('Validate & Enrich Input').first().json.correlationId, error: $json.error || 'Research failed' }) }}",
+        "options": {}
+      },
+      "id": "trigger-error-handler",
+      "name": "Route to Error Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate & Enrich Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Enrich Input": {
+      "main": [
+        [
+          {
+            "node": "Call TravelMind Research API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call TravelMind Research API": {
+      "main": [
+        [
+          {
+            "node": "Research Succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Format Plan Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route to Error Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "orchestrator"
+    },
+    {
+      "name": "travelmind"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-01"
+}

@@ -1,0 +1,127 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: travelmind-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-travelmind}
+      POSTGRES_USER: ${POSTGRES_USER:-travelmind}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-travelmind}
+    ports:
+      # Map to host port 5433 by default to avoid conflict with local Windows PostgreSQL on 5432
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-travelmind} -d ${POSTGRES_DB:-travelmind}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: travelmind-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: travelmind-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-travelmind}:${POSTGRES_PASSWORD:-travelmind}@db:5432/${POSTGRES_DB:-travelmind}
+      REDIS_URL: redis://redis:6379/0
+      APP_ENV: ${APP_ENV:-production}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-secret-token-32-chars-min}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AMADEUS_CLIENT_ID: ${AMADEUS_CLIENT_ID:-}
+      AMADEUS_CLIENT_SECRET: ${AMADEUS_CLIENT_SECRET:-}
+      AMADEUS_BASE_URL: ${AMADEUS_BASE_URL:-https://test.api.amadeus.com}
+      PLACES_API_KEY: ${PLACES_API_KEY:-}
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-}
+      FX_API_KEY: ${FX_API_KEY:-}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      EMAIL_API_KEY: ${EMAIL_API_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      N8N_HOST: http://n8n:5678
+      N8N_WEBHOOK_URL: http://n8n:5678/webhook/travel-plan-orchestrator
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-travelmind-n8n-secret}
+      TRAVELMIND_API_BASE_URL: http://api:8000
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: travelmind-n8n
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5600/}
+      - GENERIC_TIMEZONE=UTC
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET:-travelmind-n8n-secret}
+    ports:
+      - "${N8N_HOST_PORT:-5600}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/data/workflows:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:5678/healthz || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: travelmind-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
+  redis_data:
+  n8n_data:

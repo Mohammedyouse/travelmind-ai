@@ -1,0 +1,847 @@
+{
+  "status": "success",
+  "correlationId": "corr-1791211456637",
+  "tripId": "trip-20261005144418",
+  "planResults": {
+    "travel_concierge": {
+      "name": "travel_concierge",
+      "status": "ok",
+      "summary": "The traveler is planning a 5-day trip from New York to Paris with 2 traveler(s).",
+      "data": {
+        "destination": "Paris",
+        "origin": "New York",
+        "destination_iata": "PAR",
+        "origin_iata": "NYC",
+        "duration_days": 5,
+        "travelers": 2,
+        "budget": 3500,
+        "currency": "USD",
+        "interests": [
+          "culture",
+          "food",
+          "sightseeing"
+        ]
+      },
+      "missing_fields": [],
+      "errors": [],
+      "recommendations": [
+        "Review flights and accommodation options.",
+        "Prepare a daily itinerary and local activity recommendations.",
+        "Check the trip against the total budget and risk buffer."
+      ]
+    },
+    "flight_intelligence": {
+      "name": "flight_intelligence",
+      "status": "unconfigured",
+      "summary": "Flight provider is not configured; the app will wait for real credentials.",
+      "data": {
+        "provider": "amadeus",
+        "message": "AMADEUS_CLIENT_ID / AMADEUS_CLIENT_SECRET not set",
+        "origin_iata": "NYC",
+        "destination_iata": "PAR"
+      },
+      "missing_fields": [],
+      "errors": [],
+      "recommendations": [
+        "Configure Amadeus credentials (AMADEUS_CLIENT_ID / SECRET) to enable live flight search."
+      ]
+    },
+    "accommodation_intelligence": {
+      "name": "accommodation_intelligence",
+      "status": "ok",
+      "summary": "Suggested accommodation strategy and found 4 verified property option(s) for 5 night(s).",
+      "data": {
+        "accommodation": {
+          "stay_days": 5,
+          "target_nightly_budget": 245,
+          "preferred_stays": [
+            "H\u00f4tel Le Relais Saint-Germain",
+            "CitizenM Paris Champs-\u00c9lys\u00e9es",
+            "H\u00f4tel fabric Paris",
+            "H\u00f4tel des Arts Montmartre"
+          ],
+          "sensitivity": "balanced",
+          "available_hotels": [
+            {
+              "id": "par-01",
+              "name": "H\u00f4tel Le Relais Saint-Germain",
+              "rating": 4.8,
+              "stars": 4,
+              "price_per_night": 280,
+              "currency": "USD",
+              "neighborhood": "Saint-Germain-des-Pr\u00e9s",
+              "amenities": [
+                "Historic Building",
+                "Gourmet Breakfast",
+                "Free WiFi"
+              ],
+              "source": "verified_destination_hotels"
+            },
+            {
+              "id": "par-02",
+              "name": "CitizenM Paris Champs-\u00c9lys\u00e9es",
+              "rating": 4.6,
+              "stars": 4,
+              "price_per_night": 195,
+              "currency": "USD",
+              "neighborhood": "Champs-\u00c9lys\u00e9es",
+              "amenities": [
+                "Rooftop Terrace",
+                "Mood Lighting",
+                "Express Check-in"
+              ],
+              "source": "verified_destination_hotels"
+            },
+            {
+              "id": "par-03",
+              "name": "H\u00f4tel fabric Paris",
+              "rating": 4.7,
+              "stars": 4,
+              "price_per_night": 180,
+              "currency": "USD",
+              "neighborhood": "Oberkampf",
+              "amenities": [
+                "Boutique Design",
+                "Fitness & Hammam",
+                "Bar"
+              ],
+              "source": "verified_destination_hotels"
+            },
+            {
+              "id": "par-04",
+              "name": "H\u00f4tel des Arts Montmartre",
+              "rating": 4.9,
+              "stars": 4,
+              "price_per_night": 160,
+              "currency": "USD",
+              "neighborhood": "Montmartre",
+              "amenities": [
+                "Scenic Views",
+                "Sauna",
+                "Quiet Street"
+              ],
+              "source": "verified_destination_hotels"
+            }
+          ],
+          "source": "verified_destination_hotels"
+        },
+        "hotels": [
+          {
+            "id": "par-01",
+            "name": "H\u00f4tel Le Relais Saint-Germain",
+            "rating": 4.8,
+            "stars": 4,
+            "price_per_night": 280,
+            "currency": "USD",
+            "neighborhood": "Saint-Germain-des-Pr\u00e9s",
+            "amenities": [
+              "Historic Building",
+              "Gourmet Breakfast",
+              "Free WiFi"
+            ],
+            "source": "verified_destination_hotels"
+          },
+          {
+            "id": "par-02",
+            "name": "CitizenM Paris Champs-\u00c9lys\u00e9es",
+            "rating": 4.6,
+            "stars": 4,
+            "price_per_night": 195,
+            "currency": "USD",
+            "neighborhood": "Champs-\u00c9lys\u00e9es",
+            "amenities": [
+              "Rooftop Terrace",
+              "Mood Lighting",
+              "Express Check-in"
+            ],
+            "source": "verified_destination_hotels"
+          },
+          {
+            "id": "par-03",
+            "name": "H\u00f4tel fabric Paris",
+            "rating": 4.7,
+            "stars": 4,
+            "price_per_night": 180,
+            "currency": "USD",
+            "neighborhood": "Oberkampf",
+            "amenities": [
+              "Boutique Design",
+              "Fitness & Hammam",
+              "Bar"
+            ],
+            "source": "verified_destination_hotels"
+          },
+          {
+            "id": "par-04",
+            "name": "H\u00f4tel des Arts Montmartre",
+            "rating": 4.9,
+            "stars": 4,
+            "price_per_night": 160,
+            "currency": "USD",
+            "neighborhood": "Montmartre",
+            "amenities": [
+              "Scenic Views",
+              "Sauna",
+              "Quiet Street"
+            ],
+            "source": "verified_destination_hotels"
+          }
+        ]
+      },
+      "missing_fields": [],
+      "errors": [],
+      "recommendations": [
+        "Compare central and peripheral options to balance convenience and price.",
+        "Review guest ratings and cancellation policies before confirming."
+      ]
+    },
+    "destination_discovery": {
+      "name": "destination_discovery",
+      "status": "ok",
+      "summary": "Destination discovery for Paris completed: found 8 verified places and attractions.",
+      "data": {
+        "destination": {
+          "destination": "Paris",
+          "interests": [
+            "culture",
+            "food",
+            "sightseeing"
+          ],
+          "highlights": [
+            "Point z\u00e9ro des Routes de France (Attraction)",
+            "Tours de Notre-Dame (Attraction)",
+            "Cath\u00e9drale Notre-Dame de Paris (Place Of Worship)",
+            "Dalle Romaine (Attraction)",
+            "Flood Marking (Attraction)"
+          ],
+          "best_for": [
+            "culture",
+            "food",
+            "sightseeing"
+          ],
+          "places": [
+            {
+              "name": "Point z\u00e9ro des Routes de France",
+              "category": "attraction",
+              "rating": 4.6,
+              "lat": 48.8534015,
+              "lon": 2.3487885,
+              "address": "Point z\u00e9ro des Routes de France, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France",
+              "price_level": "Free",
+              "source": "osm_live_nominatim"
+            },
+            {
+              "name": "Tours de Notre-Dame",
+              "category": "attraction",
+              "rating": 4.6,
+              "lat": 48.8533658,
+              "lon": 2.3493036,
+              "address": "Tours de Notre-Dame, 6, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France",
+              "price_level": "Free",
+              "source": "osm_live_nominatim"
+            },
+            {
+              "name": "Cath\u00e9drale Notre-Dame de Paris",
+              "category": "place of worship",
+              "rating": 4.6,
+              "lat": 48.8529371,
+              "lon": 2.3500501,
+              "address": "Cath\u00e9drale Notre-Dame de Paris, 6, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France",
+              "price_level": "Free",
+              "source": "osm_live_nominatim"
+            },
+            {
+              "name": "Dalle Romaine",
+              "category": "attraction",
+              "rating": 4.6,
+              "lat": 48.8520271,
+              "lon": 2.3469451,
+              "address": "Dalle Romaine, All\u00e9e Amandine Giraud, Quartier de la Sorbonne, Paris 5e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75005, France",
+              "price_level": "Free",
+              "source": "osm_live_nominatim"
+            },
+            {
+              "name": "Flood Marking",
+              "category": "attraction",
+              "rating": 4.6,
+              "lat": 48.859033,
+              "lon": 2.3235518,
+              "address": "Flood Marking, Rue de Bellechasse, Quartier des Invalides, Paris 7e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75007, France",
+              "price_level": "Free",
+              "source": "osm_live_nominatim"
+            },
+            {
+              "name": "Assembl\u00e9e nationale",
+              "category": "government",
+              "rating": 4.6,
+              "lat": 48.8617819,
+              "lon": 2.3179827,
+              "address": "Assembl\u00e9e nationale, Quai d'Orsay, Quartier des Invalides, Paris 7e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75007, France",
+              "price_level": "Free",
+              "source": "osm_live_nominatim"
+            },
+            {
+              "name": "Palais de Justice de Paris",
+              "category": "attraction",
+              "rating": 4.6,
+              "lat": 48.8556574,
+              "lon": 2.3450512,
+              "address": "Palais de Justice de Paris, Acc\u00e8s Parking Pont Neuf, Saint-Germain-l'Auxerrois, Paris 1er Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75001, France",
+              "price_level": "Free",
+              "source": "osm_live_nominatim"
+            },
+            {
+              "name": "M\u00e9morial des Martyrs de la D\u00e9portation",
+              "category": "attraction",
+              "rating": 4.6,
+              "lat": 48.8517396,
+              "lon": 2.3523658,
+              "address": "M\u00e9morial des Martyrs de la D\u00e9portation, All\u00e9e des Justes parmi les Nations, Quartier Saint-Gervais, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France",
+              "price_level": "Free",
+              "source": "osm_live_nominatim"
+            }
+          ],
+          "coordinates": null,
+          "source": "osm_live_nominatim"
+        },
+        "places": [
+          {
+            "name": "Point z\u00e9ro des Routes de France",
+            "category": "attraction",
+            "rating": 4.6,
+            "lat": 48.8534015,
+            "lon": 2.3487885,
+            "address": "Point z\u00e9ro des Routes de France, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France",
+            "price_level": "Free",
+            "source": "osm_live_nominatim"
+          },
+          {
+            "name": "Tours de Notre-Dame",
+            "category": "attraction",
+            "rating": 4.6,
+            "lat": 48.8533658,
+            "lon": 2.3493036,
+            "address": "Tours de Notre-Dame, 6, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France",
+            "price_level": "Free",
+            "source": "osm_live_nominatim"
+          },
+          {
+            "name": "Cath\u00e9drale Notre-Dame de Paris",
+            "category": "place of worship",
+            "rating": 4.6,
+            "lat": 48.8529371,
+            "lon": 2.3500501,
+            "address": "Cath\u00e9drale Notre-Dame de Paris, 6, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France",
+            "price_level": "Free",
+            "source": "osm_live_nominatim"
+          },
+          {
+            "name": "Dalle Romaine",
+            "category": "attraction",
+            "rating": 4.6,
+            "lat": 48.8520271,
+            "lon": 2.3469451,
+            "address": "Dalle Romaine, All\u00e9e Amandine Giraud, Quartier de la Sorbonne, Paris 5e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75005, France",
+            "price_level": "Free",
+            "source": "osm_live_nominatim"
+          },
+          {
+            "name": "Flood Marking",
+            "category": "attraction",
+            "rating": 4.6,
+            "lat": 48.859033,
+            "lon": 2.3235518,
+            "address": "Flood Marking, Rue de Bellechasse, Quartier des Invalides, Paris 7e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75007, France",
+            "price_level": "Free",
+            "source": "osm_live_nominatim"
+          },
+          {
+            "name": "Assembl\u00e9e nationale",
+            "category": "government",
+            "rating": 4.6,
+            "lat": 48.8617819,
+            "lon": 2.3179827,
+            "address": "Assembl\u00e9e nationale, Quai d'Orsay, Quartier des Invalides, Paris 7e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75007, France",
+            "price_level": "Free",
+            "source": "osm_live_nominatim"
+          },
+          {
+            "name": "Palais de Justice de Paris",
+            "category": "attraction",
+            "rating": 4.6,
+            "lat": 48.8556574,
+            "lon": 2.3450512,
+            "address": "Palais de Justice de Paris, Acc\u00e8s Parking Pont Neuf, Saint-Germain-l'Auxerrois, Paris 1er Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75001, France",
+            "price_level": "Free",
+            "source": "osm_live_nominatim"
+          },
+          {
+            "name": "M\u00e9morial des Martyrs de la D\u00e9portation",
+            "category": "attraction",
+            "rating": 4.6,
+            "lat": 48.8517396,
+            "lon": 2.3523658,
+            "address": "M\u00e9morial des Martyrs de la D\u00e9portation, All\u00e9e des Justes parmi les Nations, Quartier Saint-Gervais, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France",
+            "price_level": "Free",
+            "source": "osm_live_nominatim"
+          }
+        ]
+      },
+      "missing_fields": [],
+      "errors": [],
+      "recommendations": [
+        "Prioritize top-rated cultural and culinary spots on morning/afternoon slots.",
+        "Check opening hours and ticket reservations in advance."
+      ]
+    },
+    "travel_support": {
+      "name": "travel_support",
+      "status": "ok",
+      "summary": "Support workflow and weather-tailored briefing prepared for Paris.",
+      "data": {
+        "support": {
+          "destination": "Paris",
+          "checklist": [
+            "Confirm passport validity (at least 6 months remaining) and visa requirements.",
+            "Set up digital travel insurance and offline itinerary copies.",
+            "Review baggage allowance and electronic device power adapters.",
+            "Expected arrival weather in Paris: Overcast, up to 24.5\u00b0C."
+          ],
+          "weather_forecast": [
+            {
+              "date": "2026-10-05",
+              "temp_max_c": 24.5,
+              "temp_min_c": 13.5,
+              "condition": "Overcast",
+              "precipitation_probability_pct": 0,
+              "weather_code": 3
+            },
+            {
+              "date": "2026-10-06",
+              "temp_max_c": 24,
+              "temp_min_c": 12.1,
+              "condition": "Partly cloudy",
+              "precipitation_probability_pct": 0,
+              "weather_code": 2
+            },
+            {
+              "date": "2026-10-07",
+              "temp_max_c": 18.3,
+              "temp_min_c": 14.6,
+              "condition": "Slight rain showers",
+              "precipitation_probability_pct": 88,
+              "weather_code": 80
+            },
+            {
+              "date": "2026-10-08",
+              "temp_max_c": 15.5,
+              "temp_min_c": 9.5,
+              "condition": "Overcast",
+              "precipitation_probability_pct": 51,
+              "weather_code": 3
+            }
+          ],
+          "notifications": [
+            "Flight reminder (48h before departure)",
+            "Hotel check-in instructions (24h before arrival)",
+            "Daily itinerary morning briefing",
+            "Budget guardrail alert"
+          ],
+          "emergency_numbers": {
+            "police_ambulance": "112 (Europe) / 911 (US/Americas) / 110 (Japan)",
+            "embassy_assistance": "Contact national consulate in destination"
+          }
+        },
+        "weather": {
+          "latitude": 48.8566,
+          "longitude": 2.3522,
+          "timezone": "Europe/Paris",
+          "elevation_m": 36,
+          "forecast": [
+            {
+              "date": "2026-10-05",
+              "temp_max_c": 24.5,
+              "temp_min_c": 13.5,
+              "condition": "Overcast",
+              "precipitation_probability_pct": 0,
+              "weather_code": 3
+            },
+            {
+              "date": "2026-10-06",
+              "temp_max_c": 24,
+              "temp_min_c": 12.1,
+              "condition": "Partly cloudy",
+              "precipitation_probability_pct": 0,
+              "weather_code": 2
+            },
+            {
+              "date": "2026-10-07",
+              "temp_max_c": 18.3,
+              "temp_min_c": 14.6,
+              "condition": "Slight rain showers",
+              "precipitation_probability_pct": 88,
+              "weather_code": 80
+            },
+            {
+              "date": "2026-10-08",
+              "temp_max_c": 15.5,
+              "temp_min_c": 9.5,
+              "condition": "Overcast",
+              "precipitation_probability_pct": 51,
+              "weather_code": 3
+            }
+          ],
+          "source": "open-meteo-live"
+        }
+      },
+      "missing_fields": [],
+      "errors": [],
+      "recommendations": [
+        "Send flight and accommodation reminders 48 hours before departure.",
+        "Trigger itinerary check-ins at each morning checkpoint."
+      ]
+    },
+    "transportation_route": {
+      "name": "transportation_route",
+      "status": "ok",
+      "summary": "Transit and route recommendations prepared for New York to Paris.",
+      "data": {
+        "route": {
+          "route": "New York -> Paris",
+          "origin_iata": "NYC",
+          "destination_iata": "PAR",
+          "transport_modes": [
+            "airport transfer",
+            "rideshare",
+            "public transit",
+            "walking tour"
+          ],
+          "transit_options": [
+            {
+              "mode": "Airport Express Train / Metro",
+              "estimated_cost_usd": 12,
+              "time_mins": 35,
+              "recommendation": "Best value for arrival transfer"
+            },
+            {
+              "mode": "Rideshare / Licensed Taxi",
+              "estimated_cost_usd": 32,
+              "time_mins": 25,
+              "recommendation": "Convenient with heavy luggage"
+            },
+            {
+              "mode": "City Multi-Day Transit Pass",
+              "estimated_cost_usd": 22,
+              "time_mins": 0,
+              "recommendation": "Unlimited metro, tram, and buses"
+            }
+          ],
+          "recommendation": "Use a hybrid strategy: airport transfer + public transit + walking for city exploration.",
+          "travel_style": "efficient_and_cost_sensitive"
+        }
+      },
+      "missing_fields": [],
+      "errors": [],
+      "recommendations": [
+        "Purchase an unlimited city transit pass on arrival to save up to 40% on urban travel.",
+        "Minimize backtracking by clustering nearby sights during morning and afternoon outings."
+      ]
+    },
+    "budget_intelligence": {
+      "name": "budget_intelligence",
+      "status": "ok",
+      "summary": "Travel budget was evaluated at a total estimate of 4116.00 USD.",
+      "data": {
+        "subtotal": "3675.00",
+        "contingency": "441.00",
+        "total": "4116.00",
+        "remaining": "-616.00",
+        "over_budget": true,
+        "currency": "USD",
+        "items": {
+          "flights": "1050.00",
+          "accommodation": "1400.00",
+          "food": "525.00",
+          "transport": "350.00",
+          "activities": "350.00"
+        },
+        "per_person": "2058.00",
+        "sources": {
+          "flights": "development_estimate",
+          "accommodation": "verified_destination_hotels",
+          "food": "development_estimate",
+          "transport": "development_estimate",
+          "activities": "development_estimate"
+        },
+        "source": "development_estimate"
+      },
+      "missing_fields": [],
+      "errors": [],
+      "recommendations": [
+        "Reduce the accommodation category first if costs exceed the traveler\u2019s comfort ceiling.",
+        "Keep a contingency buffer for flights and local transport."
+      ]
+    },
+    "personalization_recommendation": {
+      "name": "personalization_recommendation",
+      "status": "ok",
+      "summary": "Personalized recommendations generated for travelers with a balanced profile.",
+      "data": {
+        "traveler_style": "balanced",
+        "interests": [
+          "culture",
+          "food",
+          "sightseeing"
+        ],
+        "recommendation_count": 5,
+        "ranked_highlights": [
+          {
+            "name": "Point z\u00e9ro des Routes de France",
+            "category": "attraction",
+            "rating": 4.6,
+            "fit_score": 0.71,
+            "address": "Point z\u00e9ro des Routes de France, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France"
+          },
+          {
+            "name": "Tours de Notre-Dame",
+            "category": "attraction",
+            "rating": 4.6,
+            "fit_score": 0.71,
+            "address": "Tours de Notre-Dame, 6, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France"
+          },
+          {
+            "name": "Cath\u00e9drale Notre-Dame de Paris",
+            "category": "place of worship",
+            "rating": 4.6,
+            "fit_score": 0.71,
+            "address": "Cath\u00e9drale Notre-Dame de Paris, 6, Parvis Notre-Dame - Place Jean-Paul II, Quartier Les \u00celes, Paris 4e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75004, France"
+          },
+          {
+            "name": "Dalle Romaine",
+            "category": "attraction",
+            "rating": 4.6,
+            "fit_score": 0.71,
+            "address": "Dalle Romaine, All\u00e9e Amandine Giraud, Quartier de la Sorbonne, Paris 5e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75005, France"
+          },
+          {
+            "name": "Flood Marking",
+            "category": "attraction",
+            "rating": 4.6,
+            "fit_score": 0.71,
+            "address": "Flood Marking, Rue de Bellechasse, Quartier des Invalides, Paris 7e Arrondissement, Paris, \u00cele-de-France, France m\u00e9tropolitaine, 75007, France"
+          }
+        ]
+      },
+      "missing_fields": [],
+      "errors": [],
+      "recommendations": [
+        "Prioritize culture experiences that align with the traveler\u2019s balanced style.",
+        "Prioritize food experiences that align with the traveler\u2019s balanced style.",
+        "Prioritize sightseeing experiences that align with the traveler\u2019s balanced style.",
+        "Top tailored recommendation for your interests: Point z\u00e9ro des Routes de France.",
+        "Favor local neighborhoods and strategic transport to maximize time and minimize fatigue."
+      ]
+    },
+    "agent_execution": {
+      "travel_concierge": {
+        "status": "ok",
+        "attempts": 1,
+        "duration_ms": 1,
+        "error": ""
+      },
+      "flight_intelligence": {
+        "status": "ok",
+        "attempts": 1,
+        "duration_ms": 1,
+        "error": ""
+      },
+      "accommodation_intelligence": {
+        "status": "ok",
+        "attempts": 1,
+        "duration_ms": 1,
+        "error": ""
+      },
+      "destination_discovery": {
+        "status": "ok",
+        "attempts": 1,
+        "duration_ms": 539,
+        "error": ""
+      },
+      "travel_support": {
+        "status": "ok",
+        "attempts": 1,
+        "duration_ms": 1128,
+        "error": ""
+      },
+      "transportation_route": {
+        "status": "ok",
+        "attempts": 1,
+        "duration_ms": 0,
+        "error": ""
+      },
+      "budget_intelligence": {
+        "status": "ok",
+        "attempts": 1,
+        "duration_ms": 0,
+        "error": ""
+      },
+      "personalization_recommendation": {
+        "status": "ok",
+        "attempts": 1,
+        "duration_ms": 0,
+        "error": ""
+      }
+    },
+    "itinerary": {
+      "source": "grounded_research_fallback",
+      "destination": "Paris",
+      "duration_days": 5,
+      "days": [
+        {
+          "day": 1,
+          "title": "Arrival & Welcome to Paris",
+          "activities": [
+            "Arrival, airport transfer, and check-in at H\u00f4tel Le Relais Saint-Germain",
+            "Walking tour around Point z\u00e9ro des Routes de France and neighborhood orientation",
+            "Welcome dinner and evening stroll near Tours de Notre-Dame"
+          ],
+          "morning": {
+            "activity": "Arrival, airport transfer, and check-in at H\u00f4tel Le Relais Saint-Germain",
+            "location": "Paris",
+            "time": "09:00 - 12:30",
+            "cost": 15
+          },
+          "afternoon": {
+            "activity": "Walking tour around Point z\u00e9ro des Routes de France and neighborhood orientation",
+            "location": "Paris",
+            "time": "14:00 - 17:30",
+            "cost": 25
+          },
+          "evening": {
+            "activity": "Welcome dinner and evening stroll near Tours de Notre-Dame",
+            "location": "Paris",
+            "time": "19:00 - 22:00",
+            "cost": 40
+          }
+        },
+        {
+          "day": 2,
+          "title": "Exploring Point z\u00e9ro des Routes de France",
+          "activities": [
+            "Explore Point z\u00e9ro des Routes de France with morning light and fewer crowds",
+            "Discover Tours de Notre-Dame followed by local cafe break",
+            "Dinner tasting local specialties and leisurely night walk"
+          ],
+          "morning": {
+            "activity": "Explore Point z\u00e9ro des Routes de France with morning light and fewer crowds",
+            "location": "Paris",
+            "time": "09:00 - 12:30",
+            "cost": 15
+          },
+          "afternoon": {
+            "activity": "Discover Tours de Notre-Dame followed by local cafe break",
+            "location": "Paris",
+            "time": "14:00 - 17:30",
+            "cost": 25
+          },
+          "evening": {
+            "activity": "Dinner tasting local specialties and leisurely night walk",
+            "location": "Paris",
+            "time": "19:00 - 22:00",
+            "cost": 40
+          }
+        },
+        {
+          "day": 3,
+          "title": "Exploring Cath\u00e9drale Notre-Dame de Paris",
+          "activities": [
+            "Explore Cath\u00e9drale Notre-Dame de Paris with morning light and fewer crowds",
+            "Discover Dalle Romaine followed by local cafe break",
+            "Dinner tasting local specialties and leisurely night walk"
+          ],
+          "morning": {
+            "activity": "Explore Cath\u00e9drale Notre-Dame de Paris with morning light and fewer crowds",
+            "location": "Paris",
+            "time": "09:00 - 12:30",
+            "cost": 15
+          },
+          "afternoon": {
+            "activity": "Discover Dalle Romaine followed by local cafe break",
+            "location": "Paris",
+            "time": "14:00 - 17:30",
+            "cost": 25
+          },
+          "evening": {
+            "activity": "Dinner tasting local specialties and leisurely night walk",
+            "location": "Paris",
+            "time": "19:00 - 22:00",
+            "cost": 40
+          }
+        },
+        {
+          "day": 4,
+          "title": "Exploring Flood Marking",
+          "activities": [
+            "Explore Flood Marking with morning light and fewer crowds",
+            "Discover Assembl\u00e9e nationale followed by local cafe break",
+            "Dinner tasting local specialties and leisurely night walk"
+          ],
+          "morning": {
+            "activity": "Explore Flood Marking with morning light and fewer crowds",
+            "location": "Paris",
+            "time": "09:00 - 12:30",
+            "cost": 15
+          },
+          "afternoon": {
+            "activity": "Discover Assembl\u00e9e nationale followed by local cafe break",
+            "location": "Paris",
+            "time": "14:00 - 17:30",
+            "cost": 25
+          },
+          "evening": {
+            "activity": "Dinner tasting local specialties and leisurely night walk",
+            "location": "Paris",
+            "time": "19:00 - 22:00",
+            "cost": 40
+          }
+        },
+        {
+          "day": 5,
+          "title": "Farewell Paris & Departure",
+          "activities": [
+            "Last morning visits and souvenir hunting around M\u00e9morial des Martyrs de la D\u00e9portation",
+            "Hotel checkout and transport to departure terminal",
+            "Flight departure and homeward journey"
+          ],
+          "morning": {
+            "activity": "Last morning visits and souvenir hunting around M\u00e9morial des Martyrs de la D\u00e9portation",
+            "location": "Paris",
+            "time": "09:00 - 12:30",
+            "cost": 15
+          },
+          "afternoon": {
+            "activity": "Hotel checkout and transport to departure terminal",
+            "location": "Paris",
+            "time": "14:00 - 17:30",
+            "cost": 25
+          },
+          "evening": {
+            "activity": "Flight departure and homeward journey",
+            "location": "Paris",
+            "time": "19:00 - 22:00",
+            "cost": 40
+          }
+        }
+      ],
+      "llm_synthesized": false,
+      "note": "Generated using grounded local research engine; set GEMINI_API_KEY for live AI synthesis."
+    },
+    "ai_synthesis": {
+      "gemini_invoked": false,
+      "status": "unconfigured (GEMINI_API_KEY not set)",
+      "model": null
+    }
+  },
+  "summary": "Trip from New York to Paris for 2 traveler(s) with an estimated budget of 3500 USD.",
+  "completedAt": "2026-10-05T14:44:18.385Z"
+}

@@ -1,0 +1,104 @@
+{
+  "name": "06 - Budget Optimization",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/budget",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "budget-webhook",
+      "name": "Budget Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/budget/optimize' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body || $json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "compute-budget-engine",
+      "name": "Run Decimal Budget Engine",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $json;\nconst total = parseFloat(res.total || 0);\nconst budget = parseFloat(res.budget || total);\nconst remaining = budget - total;\nreturn [{\n  json: {\n    status: 'ok',\n    subtotal: res.subtotal,\n    contingency: res.contingency,\n    total: res.total,\n    budget: res.budget,\n    remaining: remaining.toFixed(2),\n    currency: res.currency || 'USD',\n    overBudget: remaining < 0,\n    categories: res.items || {},\n    savingsTips: remaining < 0 ? [\n      'Consider booking accommodation slightly outside the prime historic center.',\n      'Look for flights with a single brief layover to save 15-25%.',\n      'Utilize city transit passes instead of rideshares.'\n    ] : ['Budget is healthy with a full 12% contingency buffer reserved.']\n  }\n}];"
+      },
+      "id": "evaluate-guardrails",
+      "name": "Evaluate Guardrails & Savings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Budget Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Decimal Budget Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Decimal Budget Engine": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Guardrails & Savings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "budget"
+    },
+    {
+      "name": "travelmind"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-06"
+}

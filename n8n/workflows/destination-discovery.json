@@ -1,0 +1,104 @@
+{
+  "name": "04 - Destination Discovery",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/destinations",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "dest-webhook",
+      "name": "Destination Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/destinations/discover' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body || $json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "fetch-pois",
+      "name": "Fetch Verified POIs & Coordinates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const places = $json.places || [];\nconst categorized = {\n  monuments: places.filter(p => (p.category || '').includes('monument') || (p.category || '').includes('heritage')),\n  museums: places.filter(p => (p.category || '').includes('museum')),\n  dining: places.filter(p => (p.category || '').includes('market') || (p.category || '').includes('restaurant') || (p.category || '').includes('cafe')),\n  viewpoints: places.filter(p => (p.category || '').includes('viewpoint') || (p.category || '').includes('park'))\n};\nreturn [{\n  json: {\n    status: 'ok',\n    destination: $json.destination,\n    coordinates: $json.coordinates,\n    totalPlaces: places.length,\n    categorized: categorized,\n    allPlaces: places,\n    source: $json.source || 'osm_geocoded_places'\n  }\n}];"
+      },
+      "id": "categorize-places",
+      "name": "Categorize & Cluster POIs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Destination Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Verified POIs & Coordinates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Verified POIs & Coordinates": {
+      "main": [
+        [
+          {
+            "node": "Categorize & Cluster POIs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "destinations"
+    },
+    {
+      "name": "travelmind"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-04"
+}

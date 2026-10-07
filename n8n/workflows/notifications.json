@@ -1,0 +1,64 @@
+{
+  "name": "Travel Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notify-traveler",
+        "responseMode": "on received",
+        "options": {}
+      },
+      "id": "notify-trigger",
+      "name": "Notify Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        120,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "channel",
+              "value": "email-and-whatsapp"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-channel",
+      "name": "Set channel",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        430,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "Notify Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "notifications"
+    }
+  ],
+  "id": "travelmind-legacy-03"
+}

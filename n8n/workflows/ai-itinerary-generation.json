@@ -1,0 +1,104 @@
+{
+  "name": "05 - AI Itinerary Generation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/itinerary",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "itinerary-webhook",
+      "name": "Itinerary Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/itinerary/generate' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body || $json) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "generate-gemini-itinerary",
+      "name": "Synthesize AI Itinerary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const itinerary = $json.itinerary || $json;\nreturn [{\n  json: {\n    status: 'ok',\n    destination: itinerary.destination,\n    durationDays: itinerary.duration_days,\n    days: itinerary.days || [],\n    source: itinerary.source || 'gemini-2.0-flash',\n    generatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "validate-itinerary",
+      "name": "Validate Daily Slots & Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Itinerary Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Synthesize AI Itinerary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Synthesize AI Itinerary": {
+      "main": [
+        [
+          {
+            "node": "Validate Daily Slots & Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "itinerary"
+    },
+    {
+      "name": "gemini"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-05"
+}

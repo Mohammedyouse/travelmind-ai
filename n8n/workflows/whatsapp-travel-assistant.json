@@ -1,0 +1,128 @@
+{
+  "name": "08 - WhatsApp Travel Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/whatsapp",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "wa-webhook",
+      "name": "WhatsApp Inbound Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst fromPhone = body.From || body.from || body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from || '+10000000000';\nconst text = body.Body || body.text || body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || 'Hello TravelMind';\nreturn [{\n  json: {\n    fromPhone: fromPhone,\n    message: text.trim(),\n    receivedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "extract-wa-message",
+      "name": "Extract Inbound Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/assistant/chat' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sender: $json.fromPhone, message: $json.message, channel: 'whatsapp' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "query-ai-assistant",
+      "name": "Query AI Travel Assistant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const replyText = $json.reply || $json.content || 'TravelMind AI: Your travel plan is active.';\nreturn [{\n  json: {\n    recipient: $('Extract Inbound Message').first().json.fromPhone,\n    reply: replyText,\n    channel: 'whatsapp',\n    status: 'delivered',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-wa-reply",
+      "name": "Format WhatsApp Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "WhatsApp Inbound Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Inbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Inbound Message": {
+      "main": [
+        [
+          {
+            "node": "Query AI Travel Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query AI Travel Assistant": {
+      "main": [
+        [
+          {
+            "node": "Format WhatsApp Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "whatsapp"
+    },
+    {
+      "name": "assistant"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-08"
+}

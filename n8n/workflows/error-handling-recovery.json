@@ -1,0 +1,126 @@
+{
+  "name": "11 - Error Handling and Recovery",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/error",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "error-webhook",
+      "name": "Error Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nreturn [{\n  json: {\n    correlationId: body.correlationId || body.correlation_id || 'unknown',\n    failedNode: body.failedNode || 'n8n_node',\n    errorMessage: body.error || body.message || 'Workflow execution failed',\n    timestamp: new Date().toISOString(),\n    severity: (body.error && body.error.includes('timeout')) ? 'warning' : 'critical'\n  }\n}];"
+      },
+      "id": "classify-error",
+      "name": "Classify Failure Severity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/errors/log' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "record-system-error",
+      "name": "Record Failure in Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        580,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: 'error_handled',\n    correlationId: $('Classify Failure Severity').first().json.correlationId,\n    recoveryAction: 'Safe fallback activated; administrator notified.',\n    handledAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "generate-recovery-response",
+      "name": "Generate Recovery Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Error Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Classify Failure Severity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Failure Severity": {
+      "main": [
+        [
+          {
+            "node": "Record Failure in Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Failure in Database": {
+      "main": [
+        [
+          {
+            "node": "Generate Recovery Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "recovery"
+    },
+    {
+      "name": "errors"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-11"
+}

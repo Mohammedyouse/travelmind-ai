@@ -1,0 +1,66 @@
+{
+  "name": "Hotel Search Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hotel-search",
+        "responseMode": "on received",
+        "options": {}
+      },
+      "id": "hotel-webhook",
+      "name": "Hotel Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        140,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/trips' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "hotel-request",
+      "name": "Hotel Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        430,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "Hotel Webhook": {
+      "main": [
+        [
+          {
+            "node": "Hotel Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "hotels"
+    }
+  ],
+  "id": "travelmind-legacy-02"
+}

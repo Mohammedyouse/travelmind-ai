@@ -1,0 +1,128 @@
+{
+  "name": "07 - Trip Modification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/modify",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "modify-webhook",
+      "name": "Trip Modification Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst tripId = body.trip_id || body.id;\nif (!tripId) {\n  throw new Error('trip_id is required for modification');\n}\nreturn [{\n  json: {\n    tripId: tripId,\n    userId: body.user_id,\n    updates: body.updates || body,\n    modifiedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "validate-update-payload",
+      "name": "Validate Update Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.TRAVELMIND_API_BASE_URL || 'http://api:8000' }}/api/v1/n8n/trips/{{ $json.tripId }}/recalculate",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.updates) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "apply-trip-update",
+      "name": "Apply Modification & Re-plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: 'ok',\n    message: 'Trip updated and recalculated successfully',\n    trip: $json,\n    updatedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-modified-output",
+      "name": "Format Modified Trip Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Trip Modification Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Update Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Update Payload": {
+      "main": [
+        [
+          {
+            "node": "Apply Modification & Re-plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Modification & Re-plan": {
+      "main": [
+        [
+          {
+            "node": "Format Modified Trip Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "trips"
+    },
+    {
+      "name": "modification"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-07"
+}

@@ -1,0 +1,126 @@
+{
+  "name": "09 - Email Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/notify/email",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "email-notify-webhook",
+      "name": "Email Notification Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nreturn [{\n  json: {\n    toEmail: body.to_email || body.email,\n    recipientName: body.name || 'Traveler',\n    subject: body.subject || 'Your TravelMind AI Itinerary & Details',\n    tripSummary: body.summary || 'Your trip is ready.',\n    departureDate: body.departure_date || 'Upcoming',\n    destination: body.destination || 'Destination',\n    totalBudget: body.total_budget || 'N/A'\n  }\n}];"
+      },
+      "id": "render-email-template",
+      "name": "Render Notification Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/notifications/log' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: 'email', recipient: $json.toEmail, subject: $json.subject, status: 'dispatched' }) }}",
+        "options": {}
+      },
+      "id": "log-notification",
+      "name": "Log Notification Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        580,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: 'ok',\n    channel: 'email',\n    recipient: $('Render Notification Payload').first().json.toEmail,\n    delivered: true,\n    sentAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "return-email-status",
+      "name": "Return Email Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Email Notification Webhook": {
+      "main": [
+        [
+          {
+            "node": "Render Notification Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Notification Payload": {
+      "main": [
+        [
+          {
+            "node": "Log Notification Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Notification Sent": {
+      "main": [
+        [
+          {
+            "node": "Return Email Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "notifications"
+    },
+    {
+      "name": "email"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-09"
+}

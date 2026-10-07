@@ -1,0 +1,137 @@
+{
+  "name": "TravelMind AI Main Orchestration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travel-plan",
+        "responseMode": "on received",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        140,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "accepted"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-status",
+      "name": "Set status",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        360,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/trips' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-trip",
+      "name": "Create Trip",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        620,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equal",
+              "value2": "accepted"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-success",
+      "name": "Success Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set status": {
+      "main": [
+        [
+          {
+            "node": "Create Trip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Trip": {
+      "main": [
+        [
+          {
+            "node": "Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "travel"
+    },
+    {
+      "name": "travelmind"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-legacy-04"
+}

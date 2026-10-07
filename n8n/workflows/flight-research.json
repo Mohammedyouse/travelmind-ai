@@ -1,0 +1,128 @@
+{
+  "name": "02 - Flight Research",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "travelmind/flights",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "flight-webhook",
+      "name": "Flight Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nreturn [{\n  json: {\n    origin: body.origin,\n    destination: body.destination,\n    departureDate: body.departure_date || body.departureDate,\n    returnDate: body.return_date || body.returnDate,\n    adults: Number(body.travelers || body.adults || 1),\n    currency: body.currency || 'USD',\n    maxResults: 6\n  }\n}];"
+      },
+      "id": "parse-flight-params",
+      "name": "Parse & Validate Flight Params",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.TRAVELMIND_API_BASE_URL || 'http://api:8000') + '/api/v1/n8n/flights/search' }}",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Webhook-Secret",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET || 'travelmind-n8n-secret' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 12000
+        }
+      },
+      "id": "query-flight-service",
+      "name": "Query Amadeus Flight Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const offers = $json.offers || $json.data || [];\nconst sorted = [...offers].sort((a, b) => (a.price || 9999) - (b.price || 9999));\nreturn [{\n  json: {\n    status: 'ok',\n    source: $json.provider || 'amadeus-live-search',\n    totalFound: sorted.length,\n    bestPrice: sorted[0]?.price || null,\n    currency: sorted[0]?.currency || 'USD',\n    offers: sorted,\n    retrievedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "sort-and-normalize",
+      "name": "Sort & Normalize Flight Offers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Flight Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate Flight Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate Flight Params": {
+      "main": [
+        [
+          {
+            "node": "Query Amadeus Flight Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Amadeus Flight Service": {
+      "main": [
+        [
+          {
+            "node": "Sort & Normalize Flight Offers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "flights"
+    },
+    {
+      "name": "travelmind"
+    }
+  ],
+  "triggerCount": 1,
+  "id": "travelmind-wf-02"
+}
