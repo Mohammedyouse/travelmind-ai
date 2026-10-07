@@ -24,10 +24,10 @@ services:
         value: https://test.api.amadeus.com
 
   # 2. React + Vite Frontend Static Site (100% Free, 0 instance hours consumed)
-  - type: static
+  - type: web
     name: travelmind-frontend
+    runtime: static
     rootDir: frontend
-    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     autoDeploy: true
