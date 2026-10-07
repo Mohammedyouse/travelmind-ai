@@ -2,11 +2,11 @@ services:
   # 1. FastAPI Backend Web Service (Free Tier)
   - type: web
     name: travelmind-api
-    env: python
+    runtime: python
     rootDir: backend
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: alembic upgrade head && uvicorn app.api.app:create_app --factory --host 0.0.0.0 --port $PORT
+    startCommand: alembic upgrade head && uvicorn app.api.app:create_app --factory --host 0.0.0.0 --port ${PORT:-8000}
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -17,7 +17,7 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://travelmind-frontend.onrender.com,http://localhost:5173,http://localhost:3000"
       - key: N8N_WEBHOOK_SECRET
         generateValue: true
       - key: AMADEUS_BASE_URL
