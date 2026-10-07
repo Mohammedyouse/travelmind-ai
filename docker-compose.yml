@@ -96,6 +96,7 @@ services:
       - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - TRAVELMIND_API_BASE_URL=${TRAVELMIND_API_BASE_URL:-http://api:8000}
       - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET:-travelmind-n8n-secret}
     ports:
       - "${N8N_HOST_PORT:-5600}:5678"

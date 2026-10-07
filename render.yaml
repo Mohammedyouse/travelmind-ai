@@ -1,0 +1,43 @@
+services:
+  # 1. FastAPI Backend Web Service (Free Tier)
+  - type: web
+    name: travelmind-api
+    env: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn app.api.app:create_app --factory --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Set in Render Dashboard to your Neon connection string
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: N8N_WEBHOOK_SECRET
+        generateValue: true
+      - key: AMADEUS_BASE_URL
+        value: https://test.api.amadeus.com
+
+  # 2. React + Vite Frontend Static Site (100% Free, 0 instance hours consumed)
+  - type: static
+    name: travelmind-frontend
+    rootDir: frontend
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: travelmind-api
+          property: host
