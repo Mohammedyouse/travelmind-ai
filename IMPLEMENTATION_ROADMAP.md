@@ -119,29 +119,29 @@ This roadmap defines the phase-by-phase implementation plan to evolve TravelMind
 ---
 
 ## Phase 8: SaaS Features, Security & Export
-- [ ] Implement subscription tiers & usage limits (Free: 3 trips/month, Pro: unlimited, Enterprise: concierge).
-- [ ] Implement rate limiting middleware (token bucket / IP-based limits).
-- [ ] Implement Stripe webhook endpoint for subscription checkout and payment events.
-- [ ] Implement Itinerary Export: Printable formatted HTML / downloadable JSON itinerary.
-- [ ] Review security: CORS origin whitelist, JWT signature verification, secret masking in logs.
+- [x] Implement subscription tiers & usage limits (Free: 3 trips/month, Pro: unlimited, Enterprise: concierge).
+- [x] Implement rate limiting middleware (token bucket / IP-based limits).
+- [x] Implement Stripe webhook endpoint for subscription checkout and payment events.
+- [x] Implement Itinerary Export: Printable formatted HTML / downloadable JSON itinerary.
+- [x] Review security: CORS origin whitelist, JWT signature verification, secret masking in logs.
 
 ---
 
 ## Phase 9: Docker, DevOps & CI/CD
-- [ ] Update `docker-compose.yml` to include `n8n` service alongside `db`, `api`, and `frontend`.
-- [ ] Add health checks, network definitions, and persistent volumes (`postgres_data`, `n8n_data`).
-- [ ] Provide production-optimized `Dockerfile` for frontend (multi-stage build with nginx).
-- [ ] Update `.github/workflows/ci.yml` for automated backend tests, data science tests, and frontend build.
+- [x] Update `docker-compose.yml` to include `n8n` service alongside `db`, `api`, and `frontend`.
+- [x] Add health checks, network definitions, and persistent volumes (`postgres_data`, `n8n_data`).
+- [x] Provide production-optimized `Dockerfile` for frontend (multi-stage build with nginx).
+- [x] Update `.github/workflows/ci.yml` for automated backend tests, data science tests, and frontend build.
 
 ---
 
 ## Phase 10: End-to-End Testing & Verification
-- [ ] Add unit and integration tests for:
+- [x] Add unit and integration tests for:
   - All new provider adapters (Amadeus, Hotels, OSM Places, Open-Meteo, Frankfurter).
   - 8-agent orchestrated DAG execution.
   - Gemini itinerary generation with grounded fallback.
   - n8n webhook authentication and dispatch.
   - Subscription tier limits and Stripe webhook processing.
-- [ ] Execute full backend test suite (`python -m unittest discover`).
-- [ ] Execute frontend build (`npm run build`).
-- [ ] Verify live application endpoints and update `PROJECT_STATUS.md`.
+- [x] Execute full backend test suite (`python -m unittest discover`).
+- [x] Execute frontend build (`npm run build`).
+- [x] Verify live application endpoints and update `PROJECT_STATUS.md`.
