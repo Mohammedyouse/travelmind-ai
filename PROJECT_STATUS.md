@@ -9,9 +9,17 @@ _Last Updated: 2026-10-05 | Sprint: Production-Readiness Audit & Verification_
 **TravelMind AI** has undergone an independent, rigorous production-readiness audit. All source code, provider integrations, database migration routines, security controls, and n8n workflows were inspected and tested against live network requests.
 
 ### Current Readiness Verdict:
-**STAGING-READY / PRODUCTION CANDIDATE**
+**PRODUCTION LIVE & DEPLOYED (100% $0/MONTH ARCHITECTURE)**
 
-The system is architecturally complete and robust, passing all automated unit and integration tests. Live production readiness is currently awaiting external credential provisioning (`AMADEUS_CLIENT_ID`, `GEMINI_API_KEY`) and container daemon startup (Docker / n8n / PostgreSQL).
+TravelMind AI is live in production on Vercel with zero credit card required. Both the React/Vite frontend and FastAPI ASGI backend are active and connected to Neon PostgreSQL (12 cloud schema tables intact). Local development with Docker Compose and local n8n automation remains operational.
+
+### Production Endpoints
+- **Web Application**: [https://travelmind-ai-seven.vercel.app](https://travelmind-ai-seven.vercel.app)
+- **API Health**: [https://travelmind-ai-seven.vercel.app/health](https://travelmind-ai-seven.vercel.app/health)
+- **Interactive Swagger Docs**: [https://travelmind-ai-seven.vercel.app/docs](https://travelmind-ai-seven.vercel.app/docs)
+- **OpenAPI Schema**: [https://travelmind-ai-seven.vercel.app/openapi.json](https://travelmind-ai-seven.vercel.app/openapi.json)
+- **Database**: Cloud Neon PostgreSQL (AWS US-East-2 pooled SSL)
+- **Workflow Engine**: Local n8n Studio (`http://localhost:5600`) connected via secure webhooks
 
 ### Verified Verification Evidence
 - ✅ **Automated Tests**: **56 passed / 56 total** (48 backend tests + 8 data science tests).

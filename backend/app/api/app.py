@@ -335,14 +335,17 @@ if FastAPI is not None:
             trip_payload["departure_date"] = trip_payload.pop("start_date")
         if "end_date" in trip_payload and "return_date" not in trip_payload:
             trip_payload["return_date"] = trip_payload.pop("end_date")
+        if "travelers_count" in trip_payload and "travelers" not in trip_payload:
+            trip_payload["travelers"] = trip_payload.pop("travelers_count")
         if isinstance(trip_payload.get("preferences"), list):
             prefs_list = trip_payload.pop("preferences")
             if "interests" not in trip_payload:
                 trip_payload["interests"] = prefs_list
             trip_payload["preferences"] = {"interests": prefs_list}
 
+        spec_payload = {k: v for k, v in trip_payload.items() if k in TripSpec.__dataclass_fields__}
         try:
-            trip = TripSpec.from_dict(trip_payload)
+            trip = TripSpec.from_dict(spec_payload)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -400,6 +403,12 @@ if FastAPI is not None:
         if set(payload) & {"user_id", "id", "plan_results"}:
             raise HTTPException(status_code=422, detail="user_id, id, and plan_results cannot be updated directly")
         updates = dict(payload)
+        if "start_date" in updates and "departure_date" not in updates:
+            updates["departure_date"] = updates.pop("start_date")
+        if "end_date" in updates and "return_date" not in updates:
+            updates["return_date"] = updates.pop("end_date")
+        if "travelers_count" in updates and "travelers" not in updates:
+            updates["travelers"] = updates.pop("travelers_count")
         interests = updates.pop("interests", None)
         if "preferences" in updates:
             updates["preferences"] = {**existing["preferences"], **updates["preferences"]}

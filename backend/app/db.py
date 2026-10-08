@@ -361,6 +361,10 @@ def update_trip(trip_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def delete_trip(trip_id: str) -> bool:
+    _write("DELETE FROM conversations WHERE trip_id = :id", {"id": trip_id})
+    _write("DELETE FROM budget_snapshots WHERE trip_id = :id", {"id": trip_id})
+    _write("DELETE FROM itinerary_items WHERE trip_id = :id", {"id": trip_id})
+    _write("DELETE FROM agent_execution_logs WHERE trip_id = :id", {"id": trip_id})
     return _write("DELETE FROM trips WHERE id = :id", {"id": trip_id}) > 0
 
 
