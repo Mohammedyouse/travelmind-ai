@@ -433,6 +433,8 @@ if FastAPI is not None:
                 "currency": updates.get("currency", existing["currency"]),
                 "preferences": updates.get("preferences", existing["preferences"]),
             }
+            if ("departure_date" in updates or "return_date" in updates) and "duration_days" not in updates:
+                planning_payload.pop("duration_days", None)
             if client_date:
                 planning_payload["client_date"] = client_date
             planning_payload["interests"] = planning_payload["preferences"].get("interests", [])
