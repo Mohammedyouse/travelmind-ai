@@ -47,6 +47,23 @@ class TestAuthAndPersistence(unittest.TestCase):
         self.assertEqual(trips[0]["destination"], "LHR")
         self.assertEqual(trip["status"], "draft")
 
+    def test_delete_user_cascades(self):
+        from backend.app.db import delete_user, get_user_by_id
+        email = f"delete-me-{uuid.uuid4()}@example.com"
+        user = register_user(email, "Pass123!", "DeleteMe")
+        trip = create_trip(user["id"], {
+            "origin": "JFK",
+            "destination": "CDG",
+            "budget": 1500,
+            "currency": "USD",
+            "status": "draft",
+        })
+        self.assertEqual(len(list_trips(user["id"])), 1)
+        res = delete_user(user["id"])
+        self.assertTrue(res)
+        self.assertIsNone(get_user_by_id(user["id"]))
+        self.assertEqual(len(list_trips(user["id"])), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

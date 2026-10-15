@@ -146,6 +146,7 @@ export const api = {
         method: 'POST', body: JSON.stringify({ email, password, full_name }),
     }),
     currentUser: (token: string) => request<{ user: User; subscription?: SubscriptionInfo }>('/api/v1/auth/me', {}, token),
+    deleteAccount: (token: string) => request<{ status: string; id: string; success: boolean }>('/api/v1/auth/me', { method: 'DELETE' }, token),
 
     // Trips
     trips: (token: string) => request<TripRecord[]>('/api/v1/trips', {}, token),

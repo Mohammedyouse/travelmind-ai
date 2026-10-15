@@ -89,57 +89,64 @@ def _now_iso() -> str:
 
 def init_db() -> None:
     if SQLALCHEMY_AVAILABLE and engine is not None:
-        if not DATABASE_URL.startswith("sqlite"):
-            return
-        initialize_schema()
-        with engine.begin() as connection:
-            connection.execute(text("""
-            CREATE TABLE IF NOT EXISTS cached_places (
-                id TEXT PRIMARY KEY,
-                destination TEXT NOT NULL,
-                name TEXT NOT NULL,
-                category TEXT NOT NULL,
-                lat REAL,
-                lon REAL,
-                address TEXT,
-                rating REAL,
-                price_level TEXT,
-                admission_price TEXT,
-                photo_url TEXT,
-                photo_attribution TEXT,
-                description TEXT,
-                website TEXT,
-                source TEXT NOT NULL,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-            """))
-            connection.execute(text("""
-            CREATE TABLE IF NOT EXISTS cached_accommodations (
-                id TEXT PRIMARY KEY,
-                destination TEXT NOT NULL,
-                name TEXT NOT NULL,
-                tier TEXT NOT NULL,
-                stars INTEGER,
-                rating REAL,
-                price_per_night REAL,
-                currency TEXT NOT NULL DEFAULT 'USD',
-                neighborhood TEXT,
-                amenities TEXT DEFAULT '[]',
-                photo_url TEXT,
-                booking_url TEXT,
-                pricing_type TEXT NOT NULL DEFAULT 'estimated_reference_rate',
-                source TEXT NOT NULL,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-            """))
-            acc_cols = {col["name"] for col in inspect(engine).get_columns("cached_accommodations")}
-            if "price_usd" not in acc_cols:
-                connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_usd REAL"))
-            if "price_inr" not in acc_cols:
-                connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_inr REAL"))
-            columns = {column["name"] for column in inspect(engine).get_columns("trips")}
-            if "plan_results" not in columns:
-                connection.execute(text("ALTER TABLE trips ADD COLUMN plan_results TEXT DEFAULT '{}'"))
+        try:
+            initialize_schema()
+            with engine.begin() as connection:
+                connection.execute(text("""
+                CREATE TABLE IF NOT EXISTS cached_places (
+                    id TEXT PRIMARY KEY,
+                    destination TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    lat REAL,
+                    lon REAL,
+                    address TEXT,
+                    rating REAL,
+                    price_level TEXT,
+                    admission_price TEXT,
+                    photo_url TEXT,
+                    photo_attribution TEXT,
+                    description TEXT,
+                    website TEXT,
+                    source TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                """))
+                connection.execute(text("""
+                CREATE TABLE IF NOT EXISTS cached_accommodations (
+                    id TEXT PRIMARY KEY,
+                    destination TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    tier TEXT NOT NULL,
+                    stars INTEGER,
+                    rating REAL,
+                    price_per_night REAL,
+                    currency TEXT NOT NULL DEFAULT 'USD',
+                    neighborhood TEXT,
+                    amenities TEXT DEFAULT '[]',
+                    photo_url TEXT,
+                    booking_url TEXT,
+                    pricing_type TEXT NOT NULL DEFAULT 'estimated_reference_rate',
+                    source TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                """))
+                try:
+                    acc_cols = {col["name"] for col in inspect(engine).get_columns("cached_accommodations")}
+                    if "price_usd" not in acc_cols:
+                        connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_usd REAL"))
+                    if "price_inr" not in acc_cols:
+                        connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_inr REAL"))
+                except Exception:
+                    pass
+                try:
+                    columns = {column["name"] for column in inspect(engine).get_columns("trips")}
+                    if "plan_results" not in columns:
+                        connection.execute(text("ALTER TABLE trips ADD COLUMN plan_results TEXT DEFAULT '{}'"))
+                except Exception:
+                    pass
+        except Exception as exc:
+            pass
         return
     conn = get_connection()
     try:
@@ -447,6 +454,18 @@ def delete_trip(trip_id: str) -> bool:
     _write("DELETE FROM itinerary_items WHERE trip_id = :id", {"id": trip_id})
     _write("DELETE FROM agent_execution_logs WHERE trip_id = :id", {"id": trip_id})
     return _write("DELETE FROM trips WHERE id = :id", {"id": trip_id}) > 0
+
+
+def delete_user(user_id: str) -> bool:
+    user_trips = _read_all("SELECT id FROM trips WHERE user_id = :uid", {"uid": user_id})
+    for trip in user_trips:
+        delete_trip(trip["id"])
+    _write("DELETE FROM notifications WHERE user_id = :uid", {"uid": user_id})
+    _write("DELETE FROM preferences WHERE user_id = :uid", {"uid": user_id})
+    _write("DELETE FROM subscriptions WHERE user_id = :uid", {"uid": user_id})
+    _write("DELETE FROM payments WHERE user_id = :uid", {"uid": user_id})
+    _write("DELETE FROM conversations WHERE user_id = :uid", {"uid": user_id})
+    return _write("DELETE FROM users WHERE id = :uid", {"uid": user_id}) > 0
 
 
 def add_conversation_message(user_id: str, trip_id: str | None, role: str, content: str) -> dict[str, Any]:

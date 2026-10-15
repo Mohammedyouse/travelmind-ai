@@ -27,6 +27,7 @@ from ..db import (
     create_payment,
     create_trip,
     delete_trip,
+    delete_user,
     get_admin_stats,
     get_or_create_subscription,
     get_preferences,
@@ -309,6 +310,12 @@ if FastAPI is not None:
         sub = get_or_create_subscription(user["sub"])
         quota = check_user_trip_quota(user["sub"])
         return {"user": user, "subscription": sub, "quota": quota}
+
+    @app.delete("/api/v1/auth/me")
+    async def delete_account(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+        user = _require_token(authorization)
+        success = delete_user(user["sub"])
+        return {"status": "deleted", "id": user["sub"], "success": success}
 
     # --- Trips CRUD & Export ---
 
