@@ -147,7 +147,7 @@ def run_tests():
     print("\n--> TEST 8: AI Assistant conversation POST /api/v1/conversations")
     chat_payload = json.dumps({
         "trip_id": trip_id,
-        "message": "What should I pack for Dubai in November?"
+        "content": "What should I pack for Dubai in November?"
     }).encode("utf-8")
     req = urllib.request.Request(
         f"{PROD_URL}/api/v1/conversations",
@@ -162,8 +162,19 @@ def run_tests():
         reply = json.loads(r.read().decode())
         print(f"  [PASS] AI Assistant reply received ({len(reply.get('content', ''))} chars): {reply.get('content', '')[:100]}...")
 
+    # 9. Cleanup Smoke Test User
+    print("\n--> CLEANUP: Safely remove smoke test account DELETE /api/v1/auth/me")
+    cleanup_req = urllib.request.Request(
+        f"{PROD_URL}/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+        method="DELETE"
+    )
+    with urllib.request.urlopen(cleanup_req) as r:
+        assert r.status == 200
+        print("  [PASS] Smoke test account cleaned up successfully!")
+
     print("\n=======================================================")
-    print("ALL PRODUCTION SMOKE TESTS PASSED (8/8)!")
+    print("ALL PRODUCTION SMOKE TESTS PASSED (8/8 + CLEANUP)!")
     print("=======================================================\n")
 
 if __name__ == "__main__":

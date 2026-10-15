@@ -549,7 +549,7 @@ if FastAPI is not None:
     ) -> dict[str, Any]:
         user = _require_token(authorization)
         trip_id = payload.get("trip_id")
-        content = payload.get("content", "").strip()
+        content = (payload.get("content") or payload.get("message") or "").strip()
         if not content:
             raise HTTPException(status_code=422, detail="Message content cannot be empty")
 
