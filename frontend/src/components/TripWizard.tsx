@@ -1,11 +1,12 @@
-import React, { useState, type FormEvent } from 'react'
-import type { TripInput } from '../services/api'
+import React, { useState, useEffect, type FormEvent } from 'react'
+import { api, type TripInput } from '../services/api'
 
 type TripWizardProps = {
     onSubmit: (input: TripInput) => Promise<void>
     onCancel: () => void
     isSubmitting: boolean
     error: string
+    token?: string
 }
 
 const POPULAR_DESTINATIONS = [
@@ -16,7 +17,7 @@ const POPULAR_ORIGINS = ['Delhi', 'Mumbai', 'Bangalore', 'Hyderabad', 'Kolkata',
 const INTEREST_OPTIONS = ['Culture & Heritage', 'Culinary & Wine', 'Art & Museums', 'Nature & Parks', 'Architecture', 'Historic Sights', 'Local Markets', 'Scenic Viewpoints']
 const TRAVEL_STYLES = ['Balanced Explorer', 'Value-Seeking & Smart', 'Comfort & Leisure', 'Paced Cultural Immersion']
 
-export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWizardProps) {
+export function TripWizard({ onSubmit, onCancel, isSubmitting, error, token }: TripWizardProps) {
     const [step, setStep] = useState<number>(1)
 
     const [origin, setOrigin] = useState('')
@@ -26,8 +27,78 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
     const [travelers, setTravelers] = useState('2')
     const [budget, setBudget] = useState('45000')
     const [currency, setCurrency] = useState('INR')
+    const [savedPreferredCurrency, setSavedPreferredCurrency] = useState<string | null>(null)
+    const [dietary, setDietary] = useState<string>('None')
     const [selectedInterests, setSelectedInterests] = useState<string[]>(['Culture & Heritage', 'Culinary & Wine', 'Historic Sights'])
     const [travelStyle, setTravelStyle] = useState('Balanced Explorer')
+
+    // Fetch user preferences on mount if token is provided
+    useEffect(() => {
+        if (!token) return
+        api.preferences(token).then(prefs => {
+            if (prefs && prefs.currency) {
+                setSavedPreferredCurrency(prefs.currency)
+                setCurrency(prefs.currency)
+                if (prefs.currency === 'INR') {
+                    setBudget('45000')
+                } else {
+                    setBudget('2500')
+                }
+            }
+            if (prefs && prefs.travel_pace) {
+                if (prefs.travel_pace === 'relaxed') setTravelStyle('Comfort & Leisure')
+                else if (prefs.travel_pace === 'intensive') setTravelStyle('Paced Cultural Immersion')
+                else if (prefs.travel_pace === 'moderate') setTravelStyle('Balanced Explorer')
+            }
+            if (prefs && prefs.dietary) {
+                setDietary(prefs.dietary)
+            }
+        }).catch(() => {})
+    }, [token])
+
+    // Dynamically compute today's date in user's local timezone (YYYY-MM-DD)
+    const todayStr = React.useMemo(() => {
+        const d = new Date()
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+    }, [])
+    const [dateValidationMessage, setDateValidationMessage] = useState<string | null>(null)
+
+    function handleDepartureChange(val: string) {
+        setDepartureDate(val)
+        if (!val) {
+            setDateValidationMessage(null)
+            return
+        }
+        if (val < todayStr) {
+            setDateValidationMessage(`Departure date cannot be in the past. Earliest selectable departure date is today (${todayStr}).`)
+            return
+        }
+        if (returnDate && val > returnDate) {
+            setDateValidationMessage(`Departure date (${val}) is after selected return date (${returnDate}). Please adjust your return date.`)
+            return
+        }
+        setDateValidationMessage(null)
+    }
+
+    function handleReturnChange(val: string) {
+        setReturnDate(val)
+        if (!val) {
+            if (departureDate && departureDate < todayStr) {
+                setDateValidationMessage(`Departure date cannot be in the past. Earliest selectable departure date is today (${todayStr}).`)
+            } else {
+                setDateValidationMessage(null)
+            }
+            return
+        }
+        if (departureDate && val < departureDate) {
+            setDateValidationMessage(`Return date (${val}) cannot be before departure date (${departureDate}).`)
+            return
+        }
+        setDateValidationMessage(null)
+    }
 
     function toggleInterest(interest: string) {
         setSelectedInterests(prev =>
@@ -39,23 +110,46 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
         setDestination(city)
         const indianCities = ['Goa', 'Jaipur', 'Kerala', 'Manali', 'Udaipur', 'Varanasi', 'Mumbai', 'Delhi']
         if (indianCities.includes(city)) {
-            setCurrency('INR')
-            if (Number(budget) < 10000) {
-                setBudget('45000')
+            // Only force INR if user has not set an explicit foreign currency preference
+            if (!savedPreferredCurrency || savedPreferredCurrency === 'INR') {
+                setCurrency('INR')
+                if (Number(budget) < 10000) {
+                    setBudget('45000')
+                }
             }
             if (!origin) {
                 setOrigin('Delhi')
             }
         } else {
             if (currency === 'INR') {
-                setCurrency('USD')
-                setBudget('2800')
+                const targetCurr = savedPreferredCurrency || 'USD'
+                setCurrency(targetCurr)
+                setBudget(targetCurr === 'INR' ? '45000' : '2800')
             }
         }
     }
 
     async function handleFinalSubmit(e: FormEvent) {
         e.preventDefault()
+        if (origin.trim().toLowerCase() === destination.trim().toLowerCase()) {
+            setDateValidationMessage('Destination cannot be the same as origin. Please choose different departure and arrival locations.')
+            setStep(1)
+            return
+        }
+        if (departureDate < todayStr) {
+            setDateValidationMessage(`Departure date cannot be in the past. Earliest selectable date is today (${todayStr}).`)
+            setStep(2)
+            return
+        }
+        if (returnDate && returnDate < departureDate) {
+            setDateValidationMessage(`Return date (${returnDate}) cannot be before departure date (${departureDate}).`)
+            setStep(2)
+            return
+        }
+        const prefsPayload: Record<string, any> = { travel_style: travelStyle }
+        if (dietary && dietary !== 'None') {
+            prefsPayload.dietary = dietary
+        }
         await onSubmit({
             origin: origin.trim().toUpperCase(),
             destination: destination.trim().toUpperCase(),
@@ -65,7 +159,8 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
             budget: Number(budget) || 2000,
             currency: currency,
             interests: selectedInterests,
-            preferences: { travel_style: travelStyle },
+            preferences: prefsPayload,
+            client_date: todayStr,
         })
     }
 
@@ -148,6 +243,24 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
                             </div>
                         </div>
 
+                        {origin.trim() && destination.trim() && origin.trim().toLowerCase() === destination.trim().toLowerCase() && (
+                            <div className="date-error-alert" style={{
+                                marginTop: '1rem',
+                                padding: '0.75rem 1rem',
+                                background: 'rgba(239, 68, 68, 0.12)',
+                                border: '1px solid rgba(239, 68, 68, 0.4)',
+                                borderRadius: '8px',
+                                color: '#fca5a5',
+                                fontSize: '0.88rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <span>⚠️</span>
+                                <span>Destination cannot be the same as origin. Please select different departure and arrival locations.</span>
+                            </div>
+                        )}
+
                         <div className="wizard-actions-bar">
                             <button type="button" className="button button-quiet" onClick={onCancel}>
                                 Cancel
@@ -155,7 +268,7 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
                             <button
                                 type="button"
                                 className="button button-primary"
-                                disabled={!origin.trim() || !destination.trim()}
+                                disabled={!origin.trim() || !destination.trim() || (origin.trim().toLowerCase() === destination.trim().toLowerCase())}
                                 onClick={() => setStep(2)}
                             >
                                 Next: Travel Dates &rarr;
@@ -175,8 +288,9 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
                                 Departure Date
                                 <input
                                     type="date"
+                                    min={todayStr}
                                     value={departureDate}
-                                    onChange={e => setDepartureDate(e.target.value)}
+                                    onChange={e => handleDepartureChange(e.target.value)}
                                     required
                                 />
                             </label>
@@ -184,9 +298,9 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
                                 Return Date (Optional)
                                 <input
                                     type="date"
-                                    min={departureDate}
+                                    min={departureDate || todayStr}
                                     value={returnDate}
-                                    onChange={e => setReturnDate(e.target.value)}
+                                    onChange={e => handleReturnChange(e.target.value)}
                                 />
                             </label>
                             <label>
@@ -202,6 +316,24 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
                             </label>
                         </div>
 
+                        {dateValidationMessage && (
+                            <div className="date-error-alert" style={{
+                                marginTop: '1rem',
+                                padding: '0.75rem 1rem',
+                                background: 'rgba(239, 68, 68, 0.12)',
+                                border: '1px solid rgba(239, 68, 68, 0.4)',
+                                borderRadius: '8px',
+                                color: '#fca5a5',
+                                fontSize: '0.88rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <span>⚠️</span>
+                                <span>{dateValidationMessage}</span>
+                            </div>
+                        )}
+
                         <div className="wizard-actions-bar">
                             <button type="button" className="button button-quiet" onClick={() => setStep(1)}>
                                 &larr; Back
@@ -209,8 +341,18 @@ export function TripWizard({ onSubmit, onCancel, isSubmitting, error }: TripWiza
                             <button
                                 type="button"
                                 className="button button-primary"
-                                disabled={!departureDate}
-                                onClick={() => setStep(3)}
+                                disabled={!departureDate || departureDate < todayStr || Boolean(returnDate && returnDate < departureDate) || Boolean(dateValidationMessage)}
+                                onClick={() => {
+                                    if (departureDate < todayStr) {
+                                        setDateValidationMessage(`Departure date cannot be in the past (${todayStr}).`)
+                                        return
+                                    }
+                                    if (returnDate && returnDate < departureDate) {
+                                        setDateValidationMessage(`Return date must be on or after departure date.`)
+                                        return
+                                    }
+                                    setStep(3)
+                                }}
                             >
                                 Next: Financials & Budget &rarr;
                             </button>

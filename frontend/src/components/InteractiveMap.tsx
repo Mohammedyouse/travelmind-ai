@@ -1,15 +1,20 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 type MapPoint = {
     id: string
     name: string
     category: string
     rating?: number
-    lat?: number
-    lon?: number
+    lat: number
+    lon: number
     address?: string
-    price_level?: string
-    type: 'destination' | 'attraction' | 'hotel' | 'dining'
+    price?: string
+    photo_url?: string
+    type: 'destination' | 'attraction' | 'hotel'
+    source?: string
+    url?: string
 }
 
 type InteractiveMapProps = {
@@ -27,68 +32,194 @@ export function InteractiveMap({
     hotels,
     coordinates,
 }: InteractiveMapProps) {
-    const [selectedPoint, setSelectedPoint] = useState<MapPoint | null>(null)
-    const [categoryFilter, setCategoryFilter] = useState<string>('all')
+    const mapContainerRef = useRef<HTMLDivElement | null>(null)
+    const mapInstanceRef = useRef<L.Map | null>(null)
+    const markersLayerRef = useRef<L.LayerGroup | null>(null)
+    const markerMapRef = useRef<Map<string, L.Marker>>(new Map())
 
-    // Collect map points
+    const [categoryFilter, setCategoryFilter] = useState<'all' | 'attraction' | 'hotel'>('all')
+    const [selectedPoint, setSelectedPoint] = useState<MapPoint | null>(null)
+
+    // Build verified points from real coordinates ONLY (no synthetic offsets)
     const points: MapPoint[] = []
 
-    // Calculate dynamic centroid from discovered places or coordinates
-    const validCoords = places.filter(p => typeof p.lat === 'number' && typeof p.lon === 'number')
-    const centerLat = coordinates?.latitude || (validCoords.length > 0 ? (validCoords.reduce((acc, p) => acc + p.lat, 0) / validCoords.length) : 28.6139)
-    const centerLon = coordinates?.longitude || (validCoords.length > 0 ? (validCoords.reduce((acc, p) => acc + p.lon, 0) / validCoords.length) : 77.2090)
+    if (coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number') {
+        points.push({
+            id: 'dest-center',
+            name: `${destination} City Center`,
+            category: 'Destination Hub',
+            lat: coordinates.latitude,
+            lon: coordinates.longitude,
+            address: `${destination} Central Coordinates`,
+            type: 'destination',
+            source: 'Geographic Centroid',
+        })
+    }
 
-    // Center destination point
-    points.push({
-        id: 'dest-center',
-        name: `${destination} City Center`,
-        category: 'Urban Hub',
-        type: 'destination',
-        lat: centerLat,
-        lon: centerLon,
-        address: `${destination} Central District`,
-    })
-
-    // Add attractions
     places.forEach((p, idx) => {
-        points.push({
-            id: `place-${idx}`,
-            name: p.name,
-            category: p.category?.replace('_', ' ').toUpperCase() || 'ATTRACTION',
-            rating: p.rating || 4.7,
-            lat: typeof p.lat === 'number' ? p.lat : centerLat + ((idx % 5) * 0.015 - 0.03),
-            lon: typeof p.lon === 'number' ? p.lon : centerLon + ((idx % 4) * 0.018 - 0.035),
-            address: p.address || `${destination}`,
-            price_level: p.price_level || '$$',
-            type: p.category?.includes('market') || p.category?.includes('food') || p.category?.includes('culinary') ? 'dining' : 'attraction',
-        })
+        if (typeof p.lat === 'number' && typeof p.lon === 'number' && !isNaN(p.lat) && !isNaN(p.lon)) {
+            points.push({
+                id: `place-${idx}`,
+                name: p.name,
+                category: (p.category || 'Attraction').replace(/_/g, ' ').toUpperCase(),
+                rating: p.rating,
+                lat: p.lat,
+                lon: p.lon,
+                address: p.address || destination,
+                price: p.price || (p.admission_fee_inr ? `₹${p.admission_fee_inr}` : undefined),
+                photo_url: p.photo_url,
+                type: 'attraction',
+                source: p.source || 'OpenStreetMap / Verified Landmark Database',
+                url: p.website || undefined,
+            })
+        }
     })
 
-    // Add hotels
     hotels.forEach((h, idx) => {
-        points.push({
-            id: `hotel-${idx}`,
-            name: h.name,
-            category: h.tier || `${h.stars || 4}-Star Boutique Stay`,
-            rating: h.rating || 4.8,
-            lat: typeof h.latitude === 'number' ? h.latitude : centerLat - ((idx % 4) * 0.012 + 0.008),
-            lon: typeof h.longitude === 'number' ? h.longitude : centerLon + ((idx % 3) * 0.014 + 0.005),
-            address: `${h.neighborhood || 'City Center'}, ${destination}`,
-            price_level: h.price_per_night ? `${h.currency === 'INR' ? '₹' : '$'}${h.price_per_night}/night` : 'Stay',
-            type: 'hotel',
-        })
+        const lat = typeof h.latitude === 'number' ? h.latitude : (typeof h.lat === 'number' ? h.lat : null)
+        const lon = typeof h.longitude === 'number' ? h.longitude : (typeof h.lon === 'number' ? h.lon : null)
+        if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+            points.push({
+                id: `hotel-${idx}`,
+                name: h.name,
+                category: h.tier || 'Hotel / Stay',
+                rating: h.rating,
+                lat,
+                lon,
+                address: h.address || `${destination}`,
+                price: h.price_per_night ? `${h.currency === 'INR' ? '₹' : '$'}${h.price_per_night} / night` : undefined,
+                photo_url: h.photo_url,
+                type: 'hotel',
+                source: h.source || 'Accommodation Provider Reference',
+                url: h.booking_url || undefined,
+            })
+        }
     })
 
     const filteredPoints = categoryFilter === 'all'
         ? points
         : points.filter(p => p.type === categoryFilter || p.type === 'destination')
 
+    // Initialize Leaflet Map
+    useEffect(() => {
+        if (!mapContainerRef.current) return
+
+        if (!mapInstanceRef.current) {
+            // Determine initial center
+            const initialLat = coordinates?.latitude ?? (points.length > 0 ? points[0].lat : 19.0760)
+            const initialLon = coordinates?.longitude ?? (points.length > 0 ? points[0].lon : 72.8777)
+
+            const map = L.map(mapContainerRef.current, {
+                center: [initialLat, initialLon],
+                zoom: 12,
+                scrollWheelZoom: false,
+            })
+
+            // OpenStreetMap tile layer with mandatory attribution
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+            }).addTo(map)
+
+            const markersLayer = L.layerGroup().addTo(map)
+            markersLayerRef.current = markersLayer
+            mapInstanceRef.current = map
+        }
+
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove()
+                mapInstanceRef.current = null
+                markersLayerRef.current = null
+            }
+        }
+    }, [])
+
+    // Update Markers when filteredPoints change
+    useEffect(() => {
+        const map = mapInstanceRef.current
+        const layer = markersLayerRef.current
+        if (!map || !layer) return
+
+        layer.clearLayers()
+        markerMapRef.current.clear()
+
+        if (filteredPoints.length === 0) return
+
+        const latLngBounds = L.latLngBounds([])
+
+        filteredPoints.forEach(point => {
+            const latLng: [number, number] = [point.lat, point.lon]
+            latLngBounds.extend(latLng)
+
+            // Distinct marker styling based on type
+            const pinColor = point.type === 'destination'
+                ? '#38bdf8'
+                : point.type === 'hotel'
+                ? '#10b981'
+                : '#f59e0b'
+
+            const iconHtml = `
+                <div class="leaflet-custom-pin" style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.4); border: 2px solid #ffffff; cursor: pointer;">
+                    <span style="font-size: 13px;">${point.type === 'hotel' ? '🏨' : point.type === 'destination' ? '📍' : '🏛️'}</span>
+                </div>
+            `
+
+            const customIcon = L.divIcon({
+                className: 'custom-pin-wrapper',
+                html: iconHtml,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -16],
+            })
+
+            const popupContent = `
+                <div class="leaflet-popup-details" style="font-family: inherit; min-width: 200px;">
+                    <strong style="font-size: 14px; display: block; margin-bottom: 4px; color: #0f172a;">${point.name}</strong>
+                    <span style="font-size: 11px; padding: 2px 6px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-weight: 600;">${point.category}</span>
+                    <p style="font-size: 12px; color: #475569; margin: 6px 0 2px;">${point.address || ''}</p>
+                    ${point.rating ? `<p style="font-size: 12px; margin: 2px 0; color: #047857;">⭐ Provider Rating: <strong>${point.rating}</strong></p>` : ''}
+                    ${point.price ? `<p style="font-size: 12px; margin: 2px 0; color: #0f172a;">💵 ${point.price}</p>` : ''}
+                    <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px;">
+                        <a href="https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lon}" target="_blank" rel="noopener noreferrer" style="font-size: 11px; color: #0284c7; text-decoration: underline;">
+                            Get Real Directions &rarr;
+                        </a>
+                        ${point.url ? `<a href="${point.url}" target="_blank" rel="noopener noreferrer" style="font-size: 11px; color: #0284c7; text-decoration: underline;">Visit &rarr;</a>` : ''}
+                    </div>
+                </div>
+            `
+
+            const marker = L.marker(latLng, { icon: customIcon })
+                .bindPopup(popupContent)
+                .on('click', () => {
+                    setSelectedPoint(point)
+                })
+
+            marker.addTo(layer)
+            markerMapRef.current.set(point.id, marker)
+        })
+
+        if (latLngBounds.isValid()) {
+            map.fitBounds(latLngBounds, { padding: [40, 40], maxZoom: 14 })
+        }
+    }, [filteredPoints])
+
+    function handleSelectPoint(point: MapPoint) {
+        setSelectedPoint(point)
+        const map = mapInstanceRef.current
+        const marker = markerMapRef.current.get(point.id)
+        if (map && marker) {
+            map.flyTo([point.lat, point.lon], 15, { duration: 1 })
+            marker.openPopup()
+        }
+    }
+
     return (
         <div className="interactive-map-card">
             <div className="map-toolbar">
                 <div className="map-route-indicator">
                     <span className="route-pulse" />
-                    <strong>Route: {origin} &rarr; {destination}</strong>
+                    <strong>OpenStreetMap Functional Navigator: {origin} &rarr; {destination}</strong>
                 </div>
 
                 <div className="map-filters">
@@ -96,7 +227,7 @@ export function InteractiveMap({
                         className={`filter-btn ${categoryFilter === 'all' ? 'active' : ''}`}
                         onClick={() => setCategoryFilter('all')}
                     >
-                        All ({points.length})
+                        All Pins ({points.length})
                     </button>
                     <button
                         className={`filter-btn ${categoryFilter === 'attraction' ? 'active' : ''}`}
@@ -108,139 +239,67 @@ export function InteractiveMap({
                         className={`filter-btn ${categoryFilter === 'hotel' ? 'active' : ''}`}
                         onClick={() => setCategoryFilter('hotel')}
                     >
-                        Hotels ({points.filter(p => p.type === 'hotel').length})
-                    </button>
-                    <button
-                        className={`filter-btn ${categoryFilter === 'dining' ? 'active' : ''}`}
-                        onClick={() => setCategoryFilter('dining')}
-                    >
-                        Dining ({points.filter(p => p.type === 'dining').length})
+                        Accommodations ({points.filter(p => p.type === 'hotel').length})
                     </button>
                 </div>
             </div>
 
-            {/* SVG Visual Radar / Map Canvas */}
-            <div className="svg-map-wrapper">
-                <svg
-                    viewBox="0 0 800 450"
-                    className="vector-map-svg"
-                    role="img"
-                    aria-label={`Interactive map of ${destination}`}
-                >
-                    <defs>
-                        <radialGradient id="mapGlow" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.15" />
-                            <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
-                        </radialGradient>
-                        <linearGradient id="flightPath" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
-                            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.8" />
-                        </linearGradient>
-                    </defs>
-
-                    {/* Dark map canvas background */}
-                    <rect width="800" height="450" fill="#090d16" rx="12" />
-                    <circle cx="400" cy="225" r="300" fill="url(#mapGlow)" />
-
-                    {/* Decorative grid lines */}
-                    <line x1="100" y1="0" x2="100" y2="450" stroke="#1e293b" strokeDasharray="4,4" />
-                    <line x1="300" y1="0" x2="300" y2="450" stroke="#1e293b" strokeDasharray="4,4" />
-                    <line x1="500" y1="0" x2="500" y2="450" stroke="#1e293b" strokeDasharray="4,4" />
-                    <line x1="700" y1="0" x2="700" y2="450" stroke="#1e293b" strokeDasharray="4,4" />
-                    <line x1="0" y1="120" x2="800" y2="120" stroke="#1e293b" strokeDasharray="4,4" />
-                    <line x1="0" y1="240" x2="800" y2="240" stroke="#1e293b" strokeDasharray="4,4" />
-                    <line x1="0" y1="360" x2="800" y2="360" stroke="#1e293b" strokeDasharray="4,4" />
-
-                    {/* Flight trajectory arc */}
-                    <path
-                        d="M 80 340 Q 240 100 420 220"
-                        fill="none"
-                        stroke="url(#flightPath)"
-                        strokeWidth="2.5"
-                        strokeDasharray="6,6"
+            {points.length === 0 ? (
+                <div className="map-empty-state" style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'var(--bg-surface)' }}>
+                    <p style={{ color: 'var(--text-muted)' }}>
+                        No verified geographic coordinates are available for this destination.
+                        Map pins are only rendered for verified real-world latitude and longitude coordinates.
+                    </p>
+                </div>
+            ) : (
+                <div className="leaflet-map-wrapper" style={{ position: 'relative' }}>
+                    <div
+                        ref={mapContainerRef}
+                        style={{ height: '480px', width: '100%', borderRadius: '12px', zIndex: 1 }}
+                        aria-label={`Interactive map of ${destination}`}
                     />
+                </div>
+            )}
 
-                    {/* Origin node */}
-                    <g transform="translate(80, 340)">
-                        <circle r="9" fill="#38bdf8" opacity="0.3" />
-                        <circle r="5" fill="#38bdf8" />
-                        <text x="-12" y="24" fill="#94a3b8" fontSize="11" fontFamily="sans-serif">
-                            {origin} (Origin)
-                        </text>
-                    </g>
-
-                    {/* Destination cluster pins */}
-                    {filteredPoints.map((pt, idx) => {
-                        // Project lat/lon onto SVG coordinates relative to dynamic centroid
-                        const ptLon = pt.lon ?? centerLon
-                        const ptLat = pt.lat ?? centerLat
-                        const offsetX = (ptLon - centerLon) * 2200
-                        const offsetY = -(ptLat - centerLat) * 2200
-
-                        const cx = Math.max(160, Math.min(740, 440 + offsetX + ((idx % 3) * 25 - 25)))
-                        const cy = Math.max(60, Math.min(410, 225 + offsetY + ((idx % 4) * 20 - 30)))
-
-                        const isSelected = selectedPoint?.id === pt.id
-                        const pinColor = pt.type === 'hotel'
-                            ? '#a855f7'
-                            : pt.type === 'dining'
-                            ? '#f59e0b'
-                            : pt.type === 'destination'
-                            ? '#10b981'
-                            : '#38bdf8'
-
-                        return (
-                            <g
-                                key={pt.id}
-                                transform={`translate(${cx}, ${cy})`}
-                                onClick={() => setSelectedPoint(pt)}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <circle r={isSelected ? 16 : 10} fill={pinColor} opacity={0.25} />
-                                <circle r={isSelected ? 8 : 6} fill={pinColor} />
-                                <text
-                                    x="10"
-                                    y="4"
-                                    fill={isSelected ? '#ffffff' : '#cbd5e1'}
-                                    fontSize={isSelected ? '12' : '10'}
-                                    fontWeight={isSelected ? 'bold' : 'normal'}
-                                    fontFamily="sans-serif"
-                                >
-                                    {pt.name.length > 20 ? pt.name.substring(0, 18) + '...' : pt.name}
-                                </text>
-                            </g>
-                        )
-                    })}
-                </svg>
-
-                {/* Selected Point Detail Popup Overlay */}
-                {selectedPoint && (
-                    <div className="map-detail-popup">
-                        <div className="popup-header">
-                            <div>
-                                <span className={`popup-type-tag type-${selectedPoint.type}`}>
-                                    {selectedPoint.type.toUpperCase()}
-                                </span>
-                                <h4>{selectedPoint.name}</h4>
-                            </div>
-                            <button className="close-popup-btn" onClick={() => setSelectedPoint(null)}>
-                                &times;
-                            </button>
-                        </div>
-                        <p className="popup-category">{selectedPoint.category}</p>
-                        <div className="popup-meta-row">
-                            {selectedPoint.rating && <span>⭐ {selectedPoint.rating} / 5.0</span>}
-                            {selectedPoint.price_level && <span>💰 {selectedPoint.price_level}</span>}
-                        </div>
-                        {selectedPoint.address && <p className="popup-address">📍 {selectedPoint.address}</p>}
-                        {selectedPoint.lat && (
-                            <small className="popup-coords">
-                                Coordinates: {selectedPoint.lat.toFixed(4)}, {selectedPoint.lon?.toFixed(4)}
-                            </small>
-                        )}
+            {/* List of Verified Location Pins for Easy Selection */}
+            {points.length > 0 && (
+                <div className="map-locations-tray" style={{ marginTop: '1rem' }}>
+                    <div className="tray-header" style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>Verified Coordinates ({filteredPoints.length})</h4>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Click any location to center and inspect details</span>
                     </div>
-                )}
-            </div>
+                    <div className="map-points-scroll-list" style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                        {filteredPoints.map(p => (
+                            <div
+                                key={p.id}
+                                className={`map-point-card ${selectedPoint?.id === p.id ? 'active' : ''}`}
+                                onClick={() => handleSelectPoint(p)}
+                                style={{
+                                    flex: '0 0 240px',
+                                    padding: '0.75rem',
+                                    borderRadius: '8px',
+                                    background: selectedPoint?.id === p.id ? 'var(--bg-surface-elevated)' : 'var(--bg-surface)',
+                                    border: `1px solid ${selectedPoint?.id === p.id ? 'var(--brand-primary)' : 'var(--border-subtle)'}`,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '13px' }}>{p.type === 'hotel' ? '🏨' : p.type === 'destination' ? '📍' : '🏛️'}</span>
+                                    <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {p.name}
+                                    </strong>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.category}</div>
+                                {p.price && <div style={{ fontSize: '0.75rem', color: 'var(--brand-primary)', marginTop: '2px' }}>{p.price}</div>}
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                    {p.lat.toFixed(4)}, {p.lon.toFixed(4)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

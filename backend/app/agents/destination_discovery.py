@@ -34,7 +34,7 @@ class DestinationDiscoveryAgent(TravelAgent):
 
         interests = trip_spec.interests or ["culture", "food", "nature"]
         places_provider = build_places_provider()
-        places_res = places_provider.search_places(trip_spec.destination, limit=18)
+        places_res = places_provider.search_places(trip_spec.destination, limit=40)
 
         raw_places = places_res.data.get("places", []) if places_res.ok and places_res.data else []
         places = [

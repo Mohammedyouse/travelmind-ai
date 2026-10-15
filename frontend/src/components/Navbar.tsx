@@ -7,6 +7,8 @@ type NavbarProps = {
     setActiveTab: (tab: string) => void
     notifications: NotificationItem[]
     subscription?: SubscriptionInfo
+    theme: 'dark' | 'light'
+    onToggleTheme: () => void
     onOpenNotifications: () => void
     onOpenAuth: () => void
     onLogout: () => void
@@ -18,6 +20,8 @@ export function Navbar({
     setActiveTab,
     notifications,
     subscription,
+    theme,
+    onToggleTheme,
     onOpenNotifications,
     onOpenAuth,
     onLogout,
@@ -72,6 +76,16 @@ export function Navbar({
             </nav>
 
             <div className="navbar-actions">
+                {/* Theme Mode Toggle Button */}
+                <button
+                    className="icon-button theme-toggle-btn"
+                    onClick={onToggleTheme}
+                    aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                    title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                >
+                    {theme === 'dark' ? '☀️' : '🌙'}
+                </button>
+
                 {user ? (
                     <>
                         <button className="icon-button notif-button" onClick={onOpenNotifications} aria-label="Notifications" title="Notifications">

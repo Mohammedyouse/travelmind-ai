@@ -92,9 +92,53 @@ def init_db() -> None:
         if not DATABASE_URL.startswith("sqlite"):
             return
         initialize_schema()
-        columns = {column["name"] for column in inspect(engine).get_columns("trips")}
-        if "plan_results" not in columns:
-            with engine.begin() as connection:
+        with engine.begin() as connection:
+            connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS cached_places (
+                id TEXT PRIMARY KEY,
+                destination TEXT NOT NULL,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL,
+                lat REAL,
+                lon REAL,
+                address TEXT,
+                rating REAL,
+                price_level TEXT,
+                admission_price TEXT,
+                photo_url TEXT,
+                photo_attribution TEXT,
+                description TEXT,
+                website TEXT,
+                source TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            """))
+            connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS cached_accommodations (
+                id TEXT PRIMARY KEY,
+                destination TEXT NOT NULL,
+                name TEXT NOT NULL,
+                tier TEXT NOT NULL,
+                stars INTEGER,
+                rating REAL,
+                price_per_night REAL,
+                currency TEXT NOT NULL DEFAULT 'USD',
+                neighborhood TEXT,
+                amenities TEXT DEFAULT '[]',
+                photo_url TEXT,
+                booking_url TEXT,
+                pricing_type TEXT NOT NULL DEFAULT 'estimated_reference_rate',
+                source TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            """))
+            acc_cols = {col["name"] for col in inspect(engine).get_columns("cached_accommodations")}
+            if "price_usd" not in acc_cols:
+                connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_usd REAL"))
+            if "price_inr" not in acc_cols:
+                connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_inr REAL"))
+            columns = {column["name"] for column in inspect(engine).get_columns("trips")}
+            if "plan_results" not in columns:
                 connection.execute(text("ALTER TABLE trips ADD COLUMN plan_results TEXT DEFAULT '{}'"))
         return
     conn = get_connection()
@@ -225,6 +269,43 @@ def init_db() -> None:
                 status TEXT NOT NULL,
                 duration_ms INTEGER DEFAULT 0,
                 error TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS cached_places (
+                id TEXT PRIMARY KEY,
+                destination TEXT NOT NULL,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL,
+                lat REAL,
+                lon REAL,
+                address TEXT,
+                rating REAL,
+                price_level TEXT,
+                admission_price TEXT,
+                photo_url TEXT,
+                photo_attribution TEXT,
+                description TEXT,
+                website TEXT,
+                source TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS cached_accommodations (
+                id TEXT PRIMARY KEY,
+                destination TEXT NOT NULL,
+                name TEXT NOT NULL,
+                tier TEXT NOT NULL,
+                stars INTEGER,
+                rating REAL,
+                price_per_night REAL,
+                currency TEXT NOT NULL DEFAULT 'USD',
+                neighborhood TEXT,
+                amenities TEXT DEFAULT '[]',
+                photo_url TEXT,
+                booking_url TEXT,
+                pricing_type TEXT NOT NULL DEFAULT 'estimated_reference_rate',
+                source TEXT NOT NULL,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
             """
@@ -535,4 +616,118 @@ def get_admin_stats() -> dict[str, Any]:
     }
 
 
+def get_cached_places(destination: str) -> list[dict[str, Any]]:
+    norm = destination.strip().upper()
+    return _read_all(
+        "SELECT * FROM cached_places WHERE upper(destination) = :dest ORDER BY rating DESC, name ASC",
+        {"dest": norm},
+    )
+
+
+def save_cached_places(destination: str, places: list[dict[str, Any]]) -> None:
+    norm = destination.strip().upper()
+    for p in places:
+        place_id = str(p.get("id") or uuid.uuid4())
+        name = p.get("name")
+        if not name:
+            continue
+        # Check if already exists
+        existing = _read_one("SELECT id FROM cached_places WHERE upper(destination) = :dest AND name = :name", {"dest": norm, "name": name})
+        if not existing:
+            _write(
+                """INSERT INTO cached_places (
+                    id, destination, name, category, lat, lon, address, rating,
+                    price_level, admission_price, photo_url, photo_attribution,
+                    description, website, source, created_at
+                ) VALUES (
+                    :id, :dest, :name, :cat, :lat, :lon, :addr, :rating,
+                    :price_level, :admission_price, :photo_url, :photo_attribution,
+                    :description, :website, :source, :created_at
+                )""",
+                {
+                    "id": place_id,
+                    "dest": norm,
+                    "name": name,
+                    "cat": p.get("category", "landmark"),
+                    "lat": p.get("lat") or p.get("latitude"),
+                    "lon": p.get("lon") or p.get("longitude"),
+                    "addr": p.get("address"),
+                    "rating": p.get("rating"),
+                    "price_level": p.get("price_level", "Free"),
+                    "admission_price": p.get("admission_price"),
+                    "photo_url": p.get("photo_url"),
+                    "photo_attribution": p.get("photo_attribution"),
+                    "description": p.get("description"),
+                    "website": p.get("website"),
+                    "source": p.get("source", "cached"),
+                    "created_at": _now_iso(),
+                },
+            )
+
+
+def get_cached_accommodations(destination: str) -> list[dict[str, Any]]:
+    norm = destination.strip().upper()
+    rows = _read_all(
+        "SELECT * FROM cached_accommodations WHERE upper(destination) = :dest ORDER BY rating DESC, name ASC",
+        {"dest": norm},
+    )
+    results = []
+    for r in rows:
+        item = dict(r)
+        if isinstance(item.get("amenities"), str):
+            try:
+                item["amenities"] = json.loads(item["amenities"])
+            except Exception:
+                item["amenities"] = []
+        results.append(item)
+    return results
+
+
+def save_cached_accommodations(destination: str, hotels: list[dict[str, Any]]) -> None:
+    norm = destination.strip().upper()
+    for h in hotels:
+        hotel_id = str(h.get("id") or uuid.uuid4())
+        name = h.get("name")
+        if not name:
+            continue
+        existing = _read_one("SELECT id FROM cached_accommodations WHERE upper(destination) = :dest AND name = :name", {"dest": norm, "name": name})
+        if not existing:
+            amenities = h.get("amenities", [])
+            amenities_json = json.dumps(amenities) if isinstance(amenities, list) else "[]"
+            p_usd = float(h.get("price_usd") or (h.get("price_per_night") if (h.get("currency") or "USD") == "USD" else round(float(h.get("price_inr", 8400.0)) / 84.0, 2)))
+            p_inr = float(h.get("price_inr") or round(p_usd * 84.0, 2))
+            rating = float(h.get("rating") or h.get("provider_rating") or 4.6)
+            _write(
+                """INSERT INTO cached_accommodations (
+                    id, destination, name, tier, stars, rating, price_per_night,
+                    price_usd, price_inr, currency, neighborhood, amenities, photo_url, booking_url,
+                    pricing_type, source, created_at
+                ) VALUES (
+                    :id, :dest, :name, :tier, :stars, :rating, :price,
+                    :p_usd, :p_inr, :curr, :neigh, :amenities, :photo_url, :booking_url,
+                    :pricing_type, :source, :created_at
+                )""",
+                {
+                    "id": hotel_id,
+                    "dest": norm,
+                    "name": name,
+                    "tier": h.get("tier", "Mid-Range"),
+                    "stars": h.get("stars", 3),
+                    "rating": rating,
+                    "price": p_usd,
+                    "p_usd": p_usd,
+                    "p_inr": p_inr,
+                    "curr": h.get("currency", "USD"),
+                    "neigh": h.get("neighborhood") or h.get("address"),
+                    "amenities": amenities_json,
+                    "photo_url": h.get("photo_url"),
+                    "booking_url": h.get("booking_url"),
+                    "pricing_type": h.get("pricing_type", "estimated_reference_rate"),
+                    "source": h.get("source", "cached"),
+                    "created_at": _now_iso(),
+                },
+            )
+
+
 init_db()
+

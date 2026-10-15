@@ -48,7 +48,7 @@ class AccommodationIntelligenceAgent(TravelAgent):
             check_out=check_out,
             guests=trip_spec.travelers,
             currency=trip_spec.currency,
-            max_results=6,
+            max_results=30,
         )
 
         hotels = result.data.get("hotels", []) if result.ok and result.data else []

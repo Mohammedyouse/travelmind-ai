@@ -140,6 +140,46 @@ class TestAirportResolution(unittest.TestCase):
         self.assertEqual(norm["arrival_airport_iata"], "CDG")
 
     def test_flight_intelligence_agent_produces_complete_airports(self):
+        raw_offer = {
+            "id": "mock-jfk-cdg-1",
+            "price": {"grandTotal": "685.50", "currency": "USD"},
+            "itineraries": [
+                {
+                    "duration": "PT7H30M",
+                    "segments": [
+                        {
+                            "carrierCode": "AF",
+                            "number": "007",
+                            "departure": {
+                                "iataCode": "JFK",
+                                "terminal": "4",
+                                "at": "2026-11-01T17:30:00",
+                            },
+                            "arrival": {
+                                "iataCode": "CDG",
+                                "terminal": "2E",
+                                "at": "2026-11-02T07:00:00",
+                            },
+                        }
+                    ],
+                }
+            ],
+        }
+        dictionaries = {
+            "locations": {
+                "JFK": {"cityCode": "NYC", "countryCode": "US"},
+                "CDG": {"cityCode": "PAR", "countryCode": "FR"},
+            },
+            "carriers": {"AF": "Air France"},
+        }
+        mock_offer = AmadeusFlightProvider._norm(raw_offer, dictionaries=dictionaries)
+
+        class MockFlightProvider:
+            name = "amadeus"
+            def search(self, *args, **kwargs):
+                from backend.app.core.types import ProviderResult
+                return ProviderResult("amadeus", "ok", [mock_offer], "1 offer")
+
         agent = FlightIntelligenceAgent()
         trip_spec = TripSpec.from_dict({
             "origin": "JFK",
@@ -150,7 +190,7 @@ class TestAirportResolution(unittest.TestCase):
             "currency": "USD",
             "travelers": 1,
         })
-        output = agent.run({"trip_spec": trip_spec})
+        output = agent.run({"trip_spec": trip_spec, "flight_provider": MockFlightProvider()})
 
         self.assertEqual(output.status, "ok")
         offers = output.data.get("offers", [])
@@ -173,7 +213,31 @@ class TestAirportResolution(unittest.TestCase):
             self.assertEqual(arr["airport_iata"], "CDG")
             self.assertEqual(arr["city"], "Paris")
             self.assertEqual(arr["country"], "France")
-            self.assertTrue(arr["arrival_datetime"].startswith("2026-11-01"))
+            self.assertTrue(arr["arrival_datetime"].startswith("2026-11-02"))
+
+    def test_all_wizard_popular_destinations_have_verified_hotels_and_landmarks(self):
+        from backend.app.integrations.hotels import VERIFIED_DESTINATION_HOTELS, DirectoryHotelProvider
+        from backend.app.integrations.places import VERIFIED_CITY_LANDMARKS, HybridPlacesProvider
+
+        popular_destinations = [
+            'Goa', 'Jaipur', 'Kerala', 'Manali', 'Udaipur', 'Varanasi', 'Mumbai', 'Delhi',
+            'Paris', 'Tokyo', 'London', 'Lisbon', 'Dubai', 'New York', 'Rome', 'Bangkok'
+        ]
+
+        dummy_transport = lambda *a, **k: (404, b"[]")
+        hotel_prov = DirectoryHotelProvider(transport=dummy_transport)
+
+        for dest in popular_destinations:
+            key = dest.upper()
+            self.assertIn(key, VERIFIED_DESTINATION_HOTELS, f"Missing verified hotels for {dest}")
+            self.assertGreater(len(VERIFIED_DESTINATION_HOTELS[key]), 0, f"Empty hotels for {dest}")
+
+            self.assertIn(key, VERIFIED_CITY_LANDMARKS, f"Missing verified landmarks for {dest}")
+            self.assertGreater(len(VERIFIED_CITY_LANDMARKS[key]), 0, f"Empty landmarks for {dest}")
+
+            h_res = hotel_prov.search_hotels(dest)
+            self.assertEqual(h_res.status, "ok", f"Search hotels failed for {dest}")
+            self.assertGreater(len(h_res.data.get("hotels", [])), 0, f"No hotels returned for {dest}")
 
 
 if __name__ == "__main__":

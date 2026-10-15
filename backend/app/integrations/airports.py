@@ -17,6 +17,7 @@ class AirportInfo(TypedDict, total=False):
     airport_name: str
     airport_iata: str
     terminal: Optional[str]
+    gate: Optional[str]
     city: str
     country: str
     departure_datetime: Optional[str]
@@ -1550,6 +1551,7 @@ def format_flight_endpoint(
         "airport_name": resolved["airport_name"],
         "airport_iata": resolved["airport_iata"],
         "terminal": resolved.get("terminal"),
+        "gate": "Not available from provider (assigned at airport on departure day)",
         "city": resolved["city"],
         "country": resolved["country"],
         "datetime": datetime_iso,

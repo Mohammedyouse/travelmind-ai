@@ -343,9 +343,8 @@ if FastAPI is not None:
                 trip_payload["interests"] = prefs_list
             trip_payload["preferences"] = {"interests": prefs_list}
 
-        spec_payload = {k: v for k, v in trip_payload.items() if k in TripSpec.__dataclass_fields__}
         try:
-            trip = TripSpec.from_dict(spec_payload)
+            trip = TripSpec.from_dict(trip_payload)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -366,7 +365,7 @@ if FastAPI is not None:
                 "destination": trip.destination,
                 "departure_date": trip.departure_date.isoformat() if trip.departure_date else None,
                 "return_date": trip.return_date.isoformat() if trip.return_date else None,
-                "duration_days": trip.duration_days,
+                "duration_days": trip.duration_days or len(plan.results.get("itinerary", {}).get("days", [])) or 1,
                 "travelers": trip.travelers,
                 "budget": trip.budget,
                 "currency": trip.currency,
@@ -403,6 +402,7 @@ if FastAPI is not None:
         if set(payload) & {"user_id", "id", "plan_results"}:
             raise HTTPException(status_code=422, detail="user_id, id, and plan_results cannot be updated directly")
         updates = dict(payload)
+        client_date = updates.pop("client_date", None)
         if "start_date" in updates and "departure_date" not in updates:
             updates["departure_date"] = updates.pop("start_date")
         if "end_date" in updates and "return_date" not in updates:
@@ -426,6 +426,8 @@ if FastAPI is not None:
                 "currency": updates.get("currency", existing["currency"]),
                 "preferences": updates.get("preferences", existing["preferences"]),
             }
+            if client_date:
+                planning_payload["client_date"] = client_date
             planning_payload["interests"] = planning_payload["preferences"].get("interests", [])
             try:
                 updated_spec = TripSpec.from_dict(planning_payload)
@@ -434,6 +436,8 @@ if FastAPI is not None:
             plan = await trip_service.plan_trip_async(updated_spec)
             updates["summary"] = plan.summary
             updates["plan_results"] = plan.results
+            if "duration_days" not in updates or not updates["duration_days"]:
+                updates["duration_days"] = updated_spec.duration_days or len(plan.results.get("itinerary", {}).get("days", [])) or 1
         try:
             updated = update_trip(trip_id, updates)
         except ValueError as exc:
@@ -451,10 +455,12 @@ if FastAPI is not None:
     async def export_trip_route(
         trip_id: str,
         export_format: str = Query(default="json", alias="format"),
+        token: str | None = Query(default=None),
         authorization: str | None = Header(default=None),
     ):
         """Exports a trip itinerary as formatted HTML, JSON, or printable document."""
-        user = _require_token(authorization)
+        auth_val = authorization or (f"Bearer {token}" if token else None)
+        user = _require_token(auth_val)
         trip = _owned_trip(trip_id, user["sub"])
 
         if export_format == "html":
@@ -472,19 +478,35 @@ if FastAPI is not None:
             budget_html = f"Total Estimated: <strong>{budget.get('total', trip.get('budget'))} {trip.get('currency')}</strong>"
 
             html = f"""<!DOCTYPE html>
-            <html>
-            <head><meta charset="utf-8"><title>{trip.get('origin')} to {trip.get('destination')} Itinerary</title>
-            <style>body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }}</style>
+            <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>{trip.get('origin')} to {trip.get('destination')} Itinerary — TravelMind AI</title>
+                <style>
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 840px; margin: 40px auto; padding: 0 24px; color: #1e293b; background: #ffffff; }}
+                    header {{ border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px; }}
+                    h1 {{ margin: 0; color: #0f172a; font-size: 28px; }}
+                    .print-btn {{ background: #0284c7; color: #ffffff; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; margin-bottom: 20px; }}
+                    .print-btn:hover {{ background: #0369a1; }}
+                    @media print {{
+                        .no-print {{ display: none !important; }}
+                        body {{ margin: 0; padding: 0; max-width: 100%; }}
+                    }}
+                </style>
             </head>
             <body>
-                <header style="border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px;">
-                    <h1 style="margin: 0; color: #0f172a;">TravelMind AI Itinerary</h1>
-                    <p style="color: #64748b; margin: 4px 0 0;">{trip.get('origin')} &rarr; {trip.get('destination')} | {trip.get('departure_date')} to {trip.get('return_date') or 'Flexible'}</p>
-                    <p>{budget_html}</p>
+                <div class="no-print">
+                    <button class="print-btn" onclick="window.print()">🖨️ Print Itinerary / Save as PDF</button>
+                </div>
+                <header>
+                    <h1>TravelMind AI Itinerary</h1>
+                    <p style="color: #64748b; margin: 6px 0 0; font-size: 16px;">{trip.get('origin')} &rarr; {trip.get('destination')} | {trip.get('departure_date')} to {trip.get('return_date') or 'Flexible'} &nbsp;·&nbsp; {trip.get('travelers', 1)} Traveler(s)</p>
+                    <p style="margin: 8px 0 0;">{budget_html}</p>
                 </header>
                 {days_html}
-                <footer style="margin-top: 32px; font-size: 12px; color: #94a3b8; text-align: center;">
-                    Generated by TravelMind AI on {datetime.now(timezone.utc).strftime('%Y-%m-%d')}
+                <footer style="margin-top: 36px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+                    Generated by TravelMind AI on {datetime.now(timezone.utc).strftime('%Y-%m-%d')} · Autonomous Multi-Agent Travel Architecture
                 </footer>
             </body></html>"""
             return HTMLResponse(content=html)

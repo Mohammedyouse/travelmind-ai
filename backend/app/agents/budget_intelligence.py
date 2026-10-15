@@ -44,6 +44,7 @@ class BudgetIntelligenceAgent(TravelAgent):
         results = context.get("results", {})
         flight_data = _extract_data(results.get("flight_intelligence"))
         hotel_data = _extract_data(results.get("accommodation_intelligence"))
+        dest_data = _extract_data(results.get("destination_discovery"))
 
         flight_offers = flight_data.get("offers", [])
         hotels = hotel_data.get("hotels", [])
@@ -52,31 +53,58 @@ class BudgetIntelligenceAgent(TravelAgent):
         if trip_spec.departure_date and trip_spec.return_date:
             stay_days = max(1, (trip_spec.return_date - trip_spec.departure_date).days)
 
-        # Use actual researched prices where available, else realistic budget-derived bounds
+        travelers = max(trip_spec.travelers or 1, 1)
+        rooms = max(1, (travelers + 1) // 2)
+        curr = (trip_spec.currency or "USD").upper()
+        is_inr = curr == "INR"
+
+        # 1. Flight quote vs transparent route corridor estimate
         if flight_offers and isinstance(flight_offers, list) and "price" in flight_offers[0]:
             flight_cost = float(flight_offers[0]["price"])
             flight_source = flight_offers[0].get("source", "amadeus-live-search")
+            flight_is_live = True
+            flight_notes = f"Live offer quote: {flight_offers[0].get('carrier_names', ['Carrier'])[0]} ({flight_offers[0].get('flight_number', 'Flight')})"
         else:
-            flight_cost = max(350.0, float(trip_spec.budget) * 0.30)
-            flight_source = "development_estimate"
+            # Baseline route allowance per traveler round-trip
+            baseline_per_traveler = 5500.0 if is_inr else 550.0
+            flight_cost = round(baseline_per_traveler * travelers, 2)
+            flight_source = "unconfigured_provider_estimate"
+            flight_is_live = False
+            flight_notes = f"Corridor estimate ({curr} {baseline_per_traveler}/traveler round-trip; Amadeus live search unconfigured)"
 
+        # 2. Hotel quote vs benchmark stay estimate
         if hotels and isinstance(hotels, list) and "price_per_night" in hotels[0]:
-            hotel_cost = float(hotels[0]["price_per_night"]) * stay_days
-            hotel_source = hotels[0].get("source", "verified_destination_hotels")
+            h0 = hotels[0]
+            nightly = float(h0.get("price_per_night", 100.0))
+            taxes_fees = float(h0.get("taxes_and_fees", nightly * stay_days * rooms * 0.12))
+            hotel_cost = float(h0.get("total_stay_price", nightly * stay_days * rooms + taxes_fees))
+            hotel_source = h0.get("source", "verified_destination_hotels")
+            hotel_is_live = h0.get("is_live", False)
+            hotel_notes = f"{h0.get('name', 'Hotel')} ({stay_days} nights × {rooms} room(s) @ {curr} {nightly}/night + {curr} {taxes_fees} taxes)"
         else:
-            hotel_cost = max(250.0, float(trip_spec.budget) * 0.35)
-            hotel_source = "development_estimate"
+            nightly_benchmark = 3200.0 if is_inr else 85.0
+            taxes_benchmark = round(nightly_benchmark * stay_days * rooms * 0.12, 2)
+            hotel_cost = round(nightly_benchmark * stay_days * rooms + taxes_benchmark, 2)
+            hotel_source = "estimated_benchmark"
+            hotel_is_live = False
+            hotel_notes = f"Benchmark estimate ({stay_days} nights × {rooms} room(s) @ {curr} {nightly_benchmark}/night + 12% taxes)"
 
-        is_inr = (trip_spec.currency or "").upper() == "INR"
+        # 3. Transparent Food Per-Person/Per-Day Model
+        daily_food_pp = 1200.0 if is_inr else 40.0
+        food_cost = round(daily_food_pp * travelers * stay_days, 2)
+        food_notes = f"{curr} {daily_food_pp}/traveler/day (breakfast, lunch, dinner, cafe) × {travelers} travelers × {stay_days} days"
 
-        if is_inr:
-            food_cost = max(800.0 * max(trip_spec.travelers, 1) * stay_days, float(trip_spec.budget) * 0.15)
-            transport_cost = max(500.0 * stay_days, float(trip_spec.budget) * 0.10)
-            activities_cost = max(600.0 * max(trip_spec.travelers, 1), float(trip_spec.budget) * 0.10)
-        else:
-            food_cost = max(120.0, float(trip_spec.budget) * 0.15)
-            transport_cost = max(80.0, float(trip_spec.budget) * 0.10)
-            activities_cost = max(60.0, float(trip_spec.budget) * 0.10)
+        # 4. Transparent Local Transport Model
+        daily_transit_pp = 500.0 if is_inr else 20.0
+        airport_transfers = 1200.0 if is_inr else 50.0
+        transport_cost = round(daily_transit_pp * travelers * stay_days + airport_transfers, 2)
+        transport_notes = f"Airport transfers ({curr} {airport_transfers}) + metro/rideshare ({curr} {daily_transit_pp}/day/traveler)"
+
+        # 5. Activities & Sightseeing Model
+        daily_activity_pp = 600.0 if is_inr else 35.0
+        activity_days = min(stay_days, 5)
+        activities_cost = round(daily_activity_pp * travelers * activity_days, 2)
+        activities_notes = f"Monument entry fees & cultural activities ({curr} {daily_activity_pp}/day/traveler × {activity_days} active days)"
 
         estimated_items = {
             "flights": round(flight_cost, 2),
@@ -88,37 +116,63 @@ class BudgetIntelligenceAgent(TravelAgent):
 
         result = compute_budget(
             estimated_items,
-            travelers=trip_spec.travelers,
+            travelers=travelers,
             contingency_pct=12,
             budget=trip_spec.budget,
-            currency=trip_spec.currency,
+            currency=curr,
         )
 
         sources = {
             "flights": flight_source,
             "accommodation": hotel_source,
-            "food": "development_estimate",
-            "transport": "development_estimate",
-            "activities": "development_estimate",
+            "food": "transparent_daily_allowance_model",
+            "transport": "transparent_transit_model",
+            "activities": "sightseeing_entry_model",
         }
+
+        item_explanations = {
+            "flights": flight_notes,
+            "accommodation": hotel_notes,
+            "food": food_notes,
+            "transport": transport_notes,
+            "activities": activities_notes,
+        }
+
+        # Accurate completeness and over-budget determination
+        has_live_quotes = flight_is_live and hotel_is_live
+        budget_status = "OVER_BUDGET" if result.over_budget else ("WITHIN_BUDGET_VERIFIED" if has_live_quotes else "WITHIN_BUDGET_ESTIMATED")
+        status_message = (
+            f"Caution: Total estimated cost ({result.total} {curr}) exceeds the budget ceiling ({trip_spec.budget} {curr})."
+            if result.over_budget else
+            (f"Itinerary is mathematically within budget ({result.remaining} {curr} remaining buffer)."
+             if has_live_quotes else
+             f"Itinerary is within estimated bounds ({result.remaining} {curr} remaining). Live flight/hotel quotes unconfigured.")
+        )
 
         return self._build_output(
             status="ok",
-            summary=f"Travel budget was evaluated at a total estimate of {result.total} {trip_spec.currency}.",
+            summary=f"Trip budget synthesized: subtotal {result.subtotal} {curr} + 12% contingency buffer ({result.contingency} {curr}) = {result.total} {curr}. Status: {budget_status}.",
             data={
                 "subtotal": str(result.subtotal),
                 "contingency": str(result.contingency),
                 "total": str(result.total),
                 "remaining": str(result.remaining),
                 "over_budget": result.over_budget,
+                "budget_status": budget_status,
+                "status_message": status_message,
                 "currency": result.currency,
                 "items": {category: str(amount) for category, amount in result.items.items()},
+                "item_explanations": item_explanations,
                 "per_person": str(result.per_person),
                 "sources": sources,
+                "stay_days": stay_days,
+                "travelers": travelers,
+                "rooms": rooms,
+                "has_live_quotes": has_live_quotes,
                 "source": "development_estimate",
             },
             recommendations=[
-                "Reduce the accommodation category first if costs exceed the traveler’s comfort ceiling.",
-                "Keep a contingency buffer for flights and local transport.",
+                "Review itemized breakdown before confirming bookings.",
+                "Reserve early if traveling during peak season to preserve contingency buffer.",
             ],
         )

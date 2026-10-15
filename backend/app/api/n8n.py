@@ -246,6 +246,7 @@ if router is not None:
             raise HTTPException(status_code=404, detail="Trip not found")
 
         updates = dict(payload)
+        client_date = updates.pop("client_date", None)
         planning_payload = {
             "origin": updates.get("origin", existing["origin"]),
             "destination": updates.get("destination", existing["destination"]),
@@ -257,6 +258,8 @@ if router is not None:
             "currency": updates.get("currency", existing["currency"]),
             "preferences": updates.get("preferences", existing["preferences"]),
         }
+        if client_date:
+            planning_payload["client_date"] = client_date
         try:
             spec = TripSpec.from_dict(planning_payload)
         except ValueError as exc:

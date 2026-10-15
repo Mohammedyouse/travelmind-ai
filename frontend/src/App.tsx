@@ -29,6 +29,26 @@ export default function App() {
     const [notifications, setNotifications] = useState<NotificationItem[]>([])
     const [subscription, setSubscription] = useState<SubscriptionInfo | undefined>(undefined)
 
+    // Theme State with OS preference & localStorage persistence
+    const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('travelmind_theme') : null
+        if (saved === 'dark' || saved === 'light') return saved
+        if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            return 'light'
+        }
+        return 'dark'
+    })
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme)
+        document.documentElement.style.colorScheme = theme
+        localStorage.setItem('travelmind_theme', theme)
+    }, [theme])
+
+    function toggleTheme() {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark')
+    }
+
     // Form / Action loading states
     const [isSubmittingTrip, setIsSubmittingTrip] = useState<boolean>(false)
     const [isUpdatingTrip, setIsUpdatingTrip] = useState<boolean>(false)
@@ -152,7 +172,7 @@ export default function App() {
 
     // Export HTML Handler
     function handleExportHtml(id: string) {
-        const url = api.exportTripUrl(id, 'html')
+        const url = api.exportTripUrl(id, token || undefined, 'html')
         window.open(url, '_blank')
     }
 
@@ -200,6 +220,8 @@ export default function App() {
                 }}
                 notifications={notifications}
                 subscription={subscription}
+                theme={theme}
+                onToggleTheme={toggleTheme}
                 onOpenNotifications={() => setShowNotifModal(true)}
                 onOpenAuth={() => {
                     setAuthMode('login')
@@ -207,6 +229,12 @@ export default function App() {
                 }}
                 onLogout={() => {
                     logout()
+                    setTrips([])
+                    setSelectedTrip(null)
+                    setNotifications([])
+                    setSubscription(undefined)
+                    setNoticeMsg('')
+                    setErrorMsg('')
                     setActiveTab('landing')
                 }}
             />
@@ -262,6 +290,7 @@ export default function App() {
                         onCancel={() => setActiveTab(user ? 'dashboard' : 'landing')}
                         isSubmitting={isSubmittingTrip}
                         error={errorMsg}
+                        token={token || undefined}
                     />
                 )}
 
@@ -310,7 +339,7 @@ export default function App() {
                 {/* 8. User Preferences */}
                 {activeTab === 'preferences' && user && token && (
                     <div className="view-container">
-                        <PreferencesView token={token} />
+                        <PreferencesView token={token} theme={theme} onThemeChange={setTheme} />
                     </div>
                 )}
 

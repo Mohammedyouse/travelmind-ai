@@ -69,6 +69,7 @@ export type TripInput = {
     currency: string
     interests: string[]
     preferences: Record<string, any>
+    client_date?: string
 }
 
 export type SubscriptionInfo = {
@@ -111,7 +112,7 @@ export type AdminStats = {
 type AuthResponse = { user: User; token: string }
 const defaultUrl = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
     ? ''
-    : 'http://localhost:8000'
+    : `http://${typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost'}:8000`
 
 const rawBaseUrl = (typeof window !== 'undefined' && (window as any).__RUNTIME_CONFIG__?.VITE_API_BASE_URL)
     || import.meta.env.VITE_API_BASE_URL
@@ -158,7 +159,8 @@ export const api = {
     deleteTrip: (token: string, id: string) => request<{ status: string; success: boolean }>(`/api/v1/trips/${encodeURIComponent(id)}`, {
         method: 'DELETE',
     }, token),
-    exportTripUrl: (id: string, format = 'html') => `${API_BASE_URL}/api/v1/trips/${encodeURIComponent(id)}/export?format=${format}`,
+    exportTripUrl: (id: string, token?: string, format = 'html') =>
+        `${API_BASE_URL}/api/v1/trips/${encodeURIComponent(id)}/export?format=${format}${token ? `&token=${encodeURIComponent(token)}` : ''}`,
 
     // Assistant Chat
     conversations: (token: string, trip_id?: string) => request<ChatMessage[]>(

@@ -211,7 +211,7 @@ class AmadeusFlightProvider(FlightProvider):
         *,
         adults: int = 1,
         currency: str = "USD",
-        max_results: int = 10,
+        max_results: int = 50,
         return_date: Optional[str] = None,
     ) -> ProviderResult:
         try:
@@ -228,7 +228,7 @@ class AmadeusFlightProvider(FlightProvider):
                 "departureDate": depart,
                 "adults": adults,
                 "currencyCode": currency,
-                "max": max_results,
+                "max": min(max_results, 250),
             }
             if return_date:
                 query_params["returnDate"] = return_date
@@ -255,7 +255,7 @@ class AmadeusFlightProvider(FlightProvider):
                 return ProviderResult(self.name, "error", None, f"HTTP {st}")
             raw_json = json.loads(raw)
             dict_data = raw_json.get("dictionaries", {})
-            offers = [
+            raw_offers = [
                 self._norm(
                     o,
                     dictionaries=dict_data,
@@ -265,6 +265,26 @@ class AmadeusFlightProvider(FlightProvider):
                 )
                 for o in raw_json.get("data", [])
             ]
+
+            # Deduplicate offers by flight signature
+            seen_signatures: set[tuple] = set()
+            offers = []
+            for off in raw_offers:
+                carrier_names = tuple(off.get("carrier_names") or off.get("carriers") or [])
+                dep_dt = off.get("departure", {}).get("departure_datetime") or off.get("departure", {}).get("datetime")
+                arr_dt = off.get("arrival", {}).get("arrival_datetime") or off.get("arrival", {}).get("datetime")
+                sig = (
+                    carrier_names,
+                    off.get("flight_number"),
+                    dep_dt,
+                    arr_dt,
+                    off.get("price"),
+                    off.get("stops"),
+                )
+                if sig not in seen_signatures:
+                    seen_signatures.add(sig)
+                    offers.append(off)
+
             return ProviderResult(self.name, "ok", offers, f"{len(offers)} offers")
         except Exception as e:
             return ProviderResult(self.name, "error", None, f"{type(e).__name__}: {e}")

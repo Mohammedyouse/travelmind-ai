@@ -3,9 +3,11 @@ import { api } from '../services/api'
 
 type PreferencesViewProps = {
     token: string
+    theme: 'dark' | 'light'
+    onThemeChange: (theme: 'dark' | 'light') => void
 }
 
-export function PreferencesView({ token }: PreferencesViewProps) {
+export function PreferencesView({ token, theme, onThemeChange }: PreferencesViewProps) {
     const [currency, setCurrency] = useState('USD')
     const [travelPace, setTravelPace] = useState('moderate')
     const [dietary, setDietary] = useState('None')
@@ -52,13 +54,22 @@ export function PreferencesView({ token }: PreferencesViewProps) {
             <form onSubmit={handleSave} className="surface-card mt-3">
                 <div className="form-grid two-columns">
                     <label>
+                        Interface Theme
+                        <select value={theme} onChange={e => onThemeChange(e.target.value as 'dark' | 'light')}>
+                            <option value="dark">Dark Theme (Night Sky & Deep Slate)</option>
+                            <option value="light">Light Theme (Daylight & Clean Ice)</option>
+                        </select>
+                    </label>
+
+                    <label>
                         Default Currency
                         <select value={currency} onChange={e => setCurrency(e.target.value)}>
-                            <option value="USD">USD ($)</option>
-                            <option value="EUR">EUR (€)</option>
-                            <option value="GBP">GBP (£)</option>
-                            <option value="CAD">CAD (C$)</option>
-                            <option value="AUD">AUD (A$)</option>
+                            <option value="INR">INR (₹ - Indian Rupee)</option>
+                            <option value="USD">USD ($ - US Dollar)</option>
+                            <option value="EUR">EUR (€ - Euro)</option>
+                            <option value="GBP">GBP (£ - British Pound)</option>
+                            <option value="CAD">CAD (C$ - Canadian Dollar)</option>
+                            <option value="AUD">AUD (A$ - Australian Dollar)</option>
                         </select>
                     </label>
 

@@ -29,9 +29,9 @@ AGENT_DEPENDENCIES: dict[str, tuple[str, ...]] = {
     "accommodation_intelligence": ("travel_concierge",),
     "destination_discovery": ("travel_concierge",),
     "transportation_route": ("destination_discovery",),
-    "budget_intelligence": ("flight_intelligence", "accommodation_intelligence"),
-    "personalization_recommendation": ("destination_discovery",),
-    "travel_support": ("travel_concierge",),
+    "budget_intelligence": ("flight_intelligence", "accommodation_intelligence", "destination_discovery"),
+    "personalization_recommendation": ("destination_discovery", "budget_intelligence"),
+    "travel_support": ("travel_concierge", "destination_discovery"),
 }
 
 
@@ -181,7 +181,12 @@ class TripService:
                 p_aft = f"{dest_name} Scenic Viewpoint & Gardens"
                 p_eve = f"{dest_name} Vibrant Bazaar & Waterfront"
 
-            if day == 1:
+            if duration_days == 1:
+                title = f"{dest_name} Express Day Tour & Return"
+                morning_act = f"Morning arrival in {dest_name}, airport transfer, and orientation tour around {p_morn}"
+                afternoon_act = f"Afternoon discovery of {p_aft} with cafe break and local artisan shopping at {p_eve}"
+                evening_act = f"Sunset stroll, farewell regional dinner ({f_tip.split(';')[0]}), and evening transfer to departure terminal"
+            elif day == 1:
                 title = f"Arrival, Check-in at {stay_name} & Orientation Tour"
                 morning_act = f"Arrival in {dest_name}, airport transfer, and smooth check-in at {stay_name} ({stay_tier})"
                 afternoon_act = f"Orientation walking tour around {p_morn} and picturesque neighborhood alleys"
