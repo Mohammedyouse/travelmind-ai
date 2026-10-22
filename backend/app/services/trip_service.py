@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from dataclasses import asdict, dataclass, field, is_dataclass
@@ -59,7 +60,7 @@ class TripService:
         return specs
 
     async def _invoke_agent(self, agent: Any, ctx: dict[str, Any]):
-        return agent.run(ctx)
+        return await asyncio.to_thread(agent.run, ctx)
 
     def build_trip_summary(self, trip_spec: TripSpec) -> str:
         destination = trip_spec.destination or "your destination"

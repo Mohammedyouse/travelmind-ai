@@ -176,6 +176,41 @@ test('Authentication and Session Flow Test Suite', async (t) => {
         assert.equal(callCount, 2)
     })
 
+    await t.test('Trip planning requests allow enough time for dependent agents', async () => {
+        const originalSetTimeout = globalThis.setTimeout
+        const originalClearTimeout = globalThis.clearTimeout
+        let timeoutDelay = 0
+        globalThis.setTimeout = ((_, delay) => {
+            timeoutDelay = Number(delay)
+            return 0 as any
+        }) as any
+        globalThis.clearTimeout = (() => {}) as any
+        globalThis.fetch = (async () => new Response('{}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        })) as any
+
+        try {
+            await api.createTrip('planning-token', {
+                origin: 'SFO',
+                destination: 'LIS',
+                departure_date: '2027-05-10',
+                travelers: 1,
+                budget: 2000,
+                currency: 'USD',
+                interests: [],
+                preferences: {},
+            })
+            assert.equal(timeoutDelay, 300_000)
+
+            await api.updateTrip('planning-token', 'trip-1', { budget: 2500 })
+            assert.equal(timeoutDelay, 300_000)
+        } finally {
+            globalThis.setTimeout = originalSetTimeout
+            globalThis.clearTimeout = originalClearTimeout
+        }
+    })
+
     await t.test('6. Page refresh with a valid session restores user seamlessly', async () => {
         const storedToken = 'existing-valid-session'
         mockStorage.setItem('travelmind.session-token', storedToken)

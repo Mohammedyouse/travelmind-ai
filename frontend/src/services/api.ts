@@ -133,6 +133,8 @@ export function setOnUnauthorized(callback: UnauthorizedCallback | null) {
 }
 
 type AuthResponse = { user: User; token: string }
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
+const TRIP_PLANNING_TIMEOUT_MS = 300_000
 const defaultUrl = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
     ? ''
     : `http://${typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost'}:8000`
@@ -147,13 +149,18 @@ const API_BASE_URL = !rawBaseUrl
         ? rawBaseUrl
         : `https://${rawBaseUrl}`
 
-async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
+async function request<T>(
+    path: string,
+    options: RequestInit = {},
+    token?: string,
+    timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+): Promise<T> {
     const headers = new Headers(options.headers)
     if (options.body) headers.set('Content-Type', 'application/json')
     if (token) headers.set('Authorization', `Bearer ${token}`)
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
         const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -224,10 +231,10 @@ export const api = {
     trip: (token: string, id: string) => request<TripRecord>(`/api/v1/trips/${encodeURIComponent(id)}`, {}, token),
     createTrip: (token: string, input: TripInput) => request<TripRecord>('/api/v1/trips', {
         method: 'POST', body: JSON.stringify(input),
-    }, token),
+    }, token, TRIP_PLANNING_TIMEOUT_MS),
     updateTrip: (token: string, id: string, input: Partial<TripInput>) => request<TripRecord>(`/api/v1/trips/${encodeURIComponent(id)}`, {
         method: 'PATCH', body: JSON.stringify(input),
-    }, token),
+    }, token, TRIP_PLANNING_TIMEOUT_MS),
     deleteTrip: (token: string, id: string) => request<{ status: string; success: boolean }>(`/api/v1/trips/${encodeURIComponent(id)}`, {
         method: 'DELETE',
     }, token),

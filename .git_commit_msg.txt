@@ -1,0 +1,5 @@
+fix: enforce LF line endings for shell scripts + gitattributes
+
+- Add .gitattributes: *.sh eol=lf, global eol=lf defaults
+- Fix backend/start.sh: converted from CRLF to LF (required on Render Linux)
+- Without LF, bash would fail: /usr/bin/env: 'bash\r': No such file

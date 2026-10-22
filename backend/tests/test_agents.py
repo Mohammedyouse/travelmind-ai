@@ -1,3 +1,5 @@
+import asyncio
+import time
 import unittest
 
 from backend.app.agents import build_agent_registry
@@ -40,6 +42,20 @@ class TestAgents(unittest.TestCase):
     def test_trip_service_requests_missing_fields(self):
         result = TripService().plan_trip(TripSpec.from_dict({"origin": "DEL", "destination": "PAR"}))
         self.assertTrue(result.missing_fields)
+
+    def test_sync_agent_does_not_block_event_loop(self):
+        class SlowAgent:
+            def run(self, _context):
+                time.sleep(0.05)
+                return "done"
+
+        async def check():
+            task = asyncio.create_task(TripService()._invoke_agent(SlowAgent(), {}))
+            await asyncio.sleep(0.005)
+            self.assertFalse(task.done())
+            self.assertEqual(await task, "done")
+
+        asyncio.run(check())
 
 
 if __name__ == "__main__":
