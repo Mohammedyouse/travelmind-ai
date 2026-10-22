@@ -89,10 +89,13 @@ def _now_iso() -> str:
 
 def init_db() -> None:
     if SQLALCHEMY_AVAILABLE and engine is not None:
-        try:
-            initialize_schema()
-            with engine.begin() as connection:
-                connection.execute(text("""
+        if DATABASE_URL.startswith("postgresql"):
+            # PostgreSQL schemas are provisioned only by explicit Alembic migrations.
+            return
+
+        initialize_schema()
+        with engine.begin() as connection:
+            connection.execute(text("""
                 CREATE TABLE IF NOT EXISTS cached_places (
                     id TEXT PRIMARY KEY,
                     destination TEXT NOT NULL,
@@ -110,9 +113,9 @@ def init_db() -> None:
                     website TEXT,
                     source TEXT NOT NULL,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
+                )
                 """))
-                connection.execute(text("""
+            connection.execute(text("""
                 CREATE TABLE IF NOT EXISTS cached_accommodations (
                     id TEXT PRIMARY KEY,
                     destination TEXT NOT NULL,
@@ -129,24 +132,18 @@ def init_db() -> None:
                     pricing_type TEXT NOT NULL DEFAULT 'estimated_reference_rate',
                     source TEXT NOT NULL,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
+                )
                 """))
-                try:
-                    acc_cols = {col["name"] for col in inspect(engine).get_columns("cached_accommodations")}
-                    if "price_usd" not in acc_cols:
-                        connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_usd REAL"))
-                    if "price_inr" not in acc_cols:
-                        connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_inr REAL"))
-                except Exception:
-                    pass
-                try:
-                    columns = {column["name"] for column in inspect(engine).get_columns("trips")}
-                    if "plan_results" not in columns:
-                        connection.execute(text("ALTER TABLE trips ADD COLUMN plan_results TEXT DEFAULT '{}'"))
-                except Exception:
-                    pass
-        except Exception as exc:
-            pass
+
+            acc_cols = {col["name"] for col in inspect(engine).get_columns("cached_accommodations")}
+            if "price_usd" not in acc_cols:
+                connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_usd REAL"))
+            if "price_inr" not in acc_cols:
+                connection.execute(text("ALTER TABLE cached_accommodations ADD COLUMN price_inr REAL"))
+
+            trip_columns = {column["name"] for column in inspect(engine).get_columns("trips")}
+            if "plan_results" not in trip_columns:
+                connection.execute(text("ALTER TABLE trips ADD COLUMN plan_results TEXT DEFAULT '{}'"))
         return
     conn = get_connection()
     try:
@@ -749,4 +746,3 @@ def save_cached_accommodations(destination: str, hotels: list[dict[str, Any]]) -
 
 
 init_db()
-

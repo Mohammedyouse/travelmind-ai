@@ -29,10 +29,9 @@ services:
         generateValue: true
 
       # ── CORS ─────────────────────────────────────────────────────────
-      # Replace YOUR-SITE with your actual Netlify subdomain after first deploy.
-      # The app also auto-allows *.netlify.app via allow_origin_regex in code.
+      # The production frontend origin; the app also allows *.vercel.app via regex.
       - key: CORS_ORIGINS
-        value: "https://YOUR-SITE.netlify.app,http://localhost:5173,http://localhost:3000"
+        value: "https://travelmind-ai-seven.vercel.app"
 
       # ── n8n Integration ──────────────────────────────────────────────
       - key: N8N_WEBHOOK_SECRET
