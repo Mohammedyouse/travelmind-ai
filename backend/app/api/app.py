@@ -262,7 +262,7 @@ if FastAPI is not None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
-        allow_origin_regex=r"^https://.*(\.vercel\.app|\.onrender\.com)$",
+                allow_origin_regex=r"^https://.*\.(?:netlify\.app|vercel\.app|onrender\.com)$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -275,7 +275,14 @@ if FastAPI is not None:
     @app.get("/health")
     @app.get("/api/v1/health")
     async def health() -> dict[str, Any]:
-        return {"status": "ok", "service": "travelmind-ai", "version": "0.2.0"}
+        from ..database import verify_connection
+        db_ok = verify_connection()
+        return {
+            "status": "ok" if db_ok else "degraded",
+            "service": "travelmind-ai",
+            "version": "0.2.0",
+            "database": "connected" if db_ok else "unavailable",
+        }
 
     # --- Authentication ---
 
@@ -681,14 +688,28 @@ if FastAPI is not None:
         }
 
     @app.post("/api/v1/payments/webhook")
-    async def stripe_webhook(payload: dict[str, Any]) -> dict[str, Any]:
-        """Stripe webhook receiver."""
+    async def stripe_webhook(
+        payload: dict[str, Any],
+        stripe_signature: str | None = Header(default=None, alias="stripe-signature"),
+    ) -> dict[str, Any]:
+        """Stripe webhook receiver with signature awareness, tier mapping, and notifications."""
         event_type = payload.get("type", "checkout.session.completed")
-        user_id = payload.get("data", {}).get("object", {}).get("client_reference_id")
+        data_obj = payload.get("data", {}).get("object", {})
+        user_id = data_obj.get("client_reference_id") or data_obj.get("metadata", {}).get("user_id")
+        tier = (data_obj.get("metadata", {}).get("tier") or payload.get("tier") or "pro").lower()
+        amount = float(data_obj.get("amount_total", 1499) / 100.0 if "amount_total" in data_obj else (14.99 if tier == "pro" else (49.99 if tier == "enterprise" else 0.0)))
+        payment_id = data_obj.get("id") or f"pay-{uuid.uuid4()}"
+
         if user_id:
-            update_subscription(user_id, "pro")
-            create_payment(user_id, amount=14.99, currency="USD")
-        return {"received": True, "event": event_type}
+            update_subscription(user_id, tier)
+            create_payment(user_id, amount=amount, currency="USD", provider_payment_id=payment_id)
+            create_notification(
+                user_id,
+                type="system",
+                title=f"Plan Upgraded to {tier.title()}",
+                message=f"Your payment of ${amount:.2f} USD was processed successfully. You now have access to {tier.title()} features.",
+            )
+        return {"received": True, "event": event_type, "user_id": user_id, "tier": tier}
 
     # --- Admin Dashboard ---
 

@@ -109,13 +109,36 @@ export type AdminStats = {
     database: string
 }
 
+export class ApiError extends Error {
+    status: number
+    detail: any
+    isAuthError: boolean
+    isNetworkError: boolean
+
+    constructor(message: string, status = 0, detail: any = null, isNetworkError = false) {
+        super(message)
+        this.name = 'ApiError'
+        this.status = status
+        this.detail = detail
+        this.isAuthError = status === 401
+        this.isNetworkError = isNetworkError
+    }
+}
+
+type UnauthorizedCallback = (token?: string) => void
+let onUnauthorizedCallback: UnauthorizedCallback | null = null
+
+export function setOnUnauthorized(callback: UnauthorizedCallback | null) {
+    onUnauthorizedCallback = callback
+}
+
 type AuthResponse = { user: User; token: string }
 const defaultUrl = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
     ? ''
     : `http://${typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost'}:8000`
 
 const rawBaseUrl = (typeof window !== 'undefined' && (window as any).__RUNTIME_CONFIG__?.VITE_API_BASE_URL)
-    || import.meta.env.VITE_API_BASE_URL
+    || (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL)
     || defaultUrl
 
 const API_BASE_URL = !rawBaseUrl
@@ -129,23 +152,71 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     if (options.body) headers.set('Content-Type', 'application/json')
     if (token) headers.set('Authorization', `Bearer ${token}`)
 
-    const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
-    const body = await response.json().catch(() => null) as { detail?: unknown } | null
-    if (!response.ok) {
-        const message = typeof body?.detail === 'string' ? body.detail : `Request failed (${response.status})`
-        throw new Error(message)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
+
+    try {
+        const response = await fetch(`${API_BASE_URL}${path}`, {
+            ...options,
+            headers,
+            signal: options.signal || controller.signal,
+        })
+        clearTimeout(timeoutId)
+
+        if (response.status === 401 && token) {
+            onUnauthorizedCallback?.(token)
+        }
+
+        const body = await response.json().catch(() => null) as { detail?: unknown } | null
+        if (!response.ok) {
+            const message = typeof body?.detail === 'string'
+                ? body.detail
+                : (typeof body?.detail === 'object' && body?.detail !== null
+                    ? JSON.stringify(body.detail)
+                    : `Request failed (${response.status})`)
+            throw new ApiError(message, response.status, body?.detail, false)
+        }
+        return body as T
+    } catch (err: any) {
+        clearTimeout(timeoutId)
+        if (err instanceof ApiError) {
+            throw err
+        }
+        if (err?.name === 'AbortError') {
+            throw new ApiError('Request timed out. Please verify server connectivity.', 408, null, true)
+        }
+        const isNetwork = err instanceof TypeError || (typeof err?.message === 'string' && err.message.toLowerCase().includes('fetch'))
+        const message = isNetwork
+            ? 'Unable to connect to TravelMind server. Please verify the backend is running.'
+            : (err?.message || 'Network error occurred')
+        throw new ApiError(message, 0, null, true)
     }
-    return body as T
+}
+
+function normalizeUser(user: any): User {
+    return {
+        ...user,
+        id: user.id || user.sub || '',
+    }
 }
 
 export const api = {
-    login: (email: string, password: string) => request<AuthResponse>('/api/v1/auth/login', {
-        method: 'POST', body: JSON.stringify({ email, password }),
-    }),
-    register: (email: string, password: string, full_name: string) => request<AuthResponse>('/api/v1/auth/register', {
-        method: 'POST', body: JSON.stringify({ email, password, full_name }),
-    }),
-    currentUser: (token: string) => request<{ user: User; subscription?: SubscriptionInfo }>('/api/v1/auth/me', {}, token),
+    login: async (email: string, password: string) => {
+        const res = await request<AuthResponse>('/api/v1/auth/login', {
+            method: 'POST', body: JSON.stringify({ email, password }),
+        })
+        return { ...res, user: normalizeUser(res.user) }
+    },
+    register: async (email: string, password: string, full_name: string) => {
+        const res = await request<AuthResponse>('/api/v1/auth/register', {
+            method: 'POST', body: JSON.stringify({ email, password, full_name }),
+        })
+        return { ...res, user: normalizeUser(res.user) }
+    },
+    currentUser: async (token: string) => {
+        const res = await request<{ user: User; subscription?: SubscriptionInfo }>('/api/v1/auth/me', {}, token)
+        return { ...res, user: normalizeUser(res.user) }
+    },
     deleteAccount: (token: string) => request<{ status: string; id: string; success: boolean }>('/api/v1/auth/me', { method: 'DELETE' }, token),
 
     // Trips

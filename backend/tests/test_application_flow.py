@@ -32,7 +32,7 @@ class TestPlanningPersistence(unittest.TestCase):
         expected_agents = {
             "travel_concierge", "flight_intelligence", "accommodation_intelligence",
             "destination_discovery", "transportation_route", "budget_intelligence",
-            "personalization_recommendation", "travel_support",
+            "personalization_recommendation", "itinerary_compiler", "travel_support",
         }
         self.assertTrue(expected_agents.issubset(plan.results))
         self.assertEqual(len(plan.results["itinerary"]["days"]), 5)

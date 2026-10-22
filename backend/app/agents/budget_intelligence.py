@@ -57,6 +57,63 @@ class BudgetIntelligenceAgent(TravelAgent):
         rooms = max(1, (travelers + 1) // 2)
         curr = (trip_spec.currency or "USD").upper()
         is_inr = curr == "INR"
+        is_usd = curr == "USD"
+
+        # Check if route is domestic India
+        orig_upper = (trip_spec.origin or "").upper()
+        dest_upper = (trip_spec.destination or "").upper()
+        indian_locations = {
+            "DEL", "DELHI", "NEW DELHI", "BOM", "MUMBAI", "BLR", "BANGALORE", "BENGALURU",
+            "GOA", "GOI", "GOX", "JAI", "JAIPUR", "KERALA", "COK", "KOCHI", "COCHIN",
+            "MAA", "CHENNAI", "CCU", "KOLKATA", "HYD", "HYDERABAD", "UDR", "UDAIPUR",
+            "VNS", "VARANASI", "KUU", "MANALI", "AGR", "AGRA", "AMD", "AHMEDABAD", "LKO", "LUCKNOW",
+        }
+        is_domestic_india = any(c in orig_upper for c in indian_locations) and any(c in dest_upper for c in indian_locations)
+
+        # Exchange rate resolution
+        fx_rate = 1.0
+        if is_inr:
+            fx_rate = 84.0
+        elif not is_usd:
+            try:
+                from ..integrations.currency import build_currency_provider
+                rates_res = build_currency_provider().get_rates("USD")
+                rates = rates_res.data.get("rates", {}) if rates_res.ok and rates_res.data else {}
+                fx_rate = float(rates.get(curr, 1.0))
+            except Exception:
+                fx_rate = 1.0
+
+        # Baseline cost rates scaled to target currency
+        if is_domestic_india:
+            if is_inr:
+                baseline_flight = 5500.0
+                nightly_benchmark = 3200.0
+                daily_food_pp = 1200.0
+                daily_transit_pp = 500.0
+                airport_transfers = 1200.0
+                daily_activity_pp = 600.0
+            else:
+                baseline_flight = round(5500.0 / 84.0 * fx_rate, 2)
+                nightly_benchmark = round(3200.0 / 84.0 * fx_rate, 2)
+                daily_food_pp = round(1200.0 / 84.0 * fx_rate, 2)
+                daily_transit_pp = round(500.0 / 84.0 * fx_rate, 2)
+                airport_transfers = round(1200.0 / 84.0 * fx_rate, 2)
+                daily_activity_pp = round(600.0 / 84.0 * fx_rate, 2)
+        else:
+            if is_inr:
+                baseline_flight = 46200.0
+                nightly_benchmark = 7140.0
+                daily_food_pp = 3360.0
+                daily_transit_pp = 1680.0
+                airport_transfers = 4200.0
+                daily_activity_pp = 2940.0
+            else:
+                baseline_flight = round(550.0 * fx_rate, 2)
+                nightly_benchmark = round(85.0 * fx_rate, 2)
+                daily_food_pp = round(40.0 * fx_rate, 2)
+                daily_transit_pp = round(20.0 * fx_rate, 2)
+                airport_transfers = round(50.0 * fx_rate, 2)
+                daily_activity_pp = round(35.0 * fx_rate, 2)
 
         # 1. Flight quote vs transparent route corridor estimate
         if flight_offers and isinstance(flight_offers, list) and "price" in flight_offers[0]:
@@ -65,24 +122,22 @@ class BudgetIntelligenceAgent(TravelAgent):
             flight_is_live = True
             flight_notes = f"Live offer quote: {flight_offers[0].get('carrier_names', ['Carrier'])[0]} ({flight_offers[0].get('flight_number', 'Flight')})"
         else:
-            # Baseline route allowance per traveler round-trip
-            baseline_per_traveler = 5500.0 if is_inr else 550.0
-            flight_cost = round(baseline_per_traveler * travelers, 2)
+            flight_cost = round(baseline_flight * travelers, 2)
             flight_source = "unconfigured_provider_estimate"
             flight_is_live = False
-            flight_notes = f"Corridor estimate ({curr} {baseline_per_traveler}/traveler round-trip; Amadeus live search unconfigured)"
+            flight_notes = f"Corridor estimate ({curr} {baseline_flight}/traveler round-trip; Amadeus live search unconfigured)"
 
         # 2. Hotel quote vs benchmark stay estimate
         if hotels and isinstance(hotels, list) and "price_per_night" in hotels[0]:
             h0 = hotels[0]
-            nightly = float(h0.get("price_per_night", 100.0))
-            taxes_fees = float(h0.get("taxes_and_fees", nightly * stay_days * rooms * 0.12))
-            hotel_cost = float(h0.get("total_stay_price", nightly * stay_days * rooms + taxes_fees))
+            nightly = float(h0.get("price_per_night", nightly_benchmark))
+            hotel_base = round(nightly * stay_days * rooms, 2)
+            taxes_fees = round(hotel_base * 0.12, 2)
+            hotel_cost = round(hotel_base + taxes_fees, 2)
             hotel_source = h0.get("source", "verified_destination_hotels")
             hotel_is_live = h0.get("is_live", False)
             hotel_notes = f"{h0.get('name', 'Hotel')} ({stay_days} nights × {rooms} room(s) @ {curr} {nightly}/night + {curr} {taxes_fees} taxes)"
         else:
-            nightly_benchmark = 3200.0 if is_inr else 85.0
             taxes_benchmark = round(nightly_benchmark * stay_days * rooms * 0.12, 2)
             hotel_cost = round(nightly_benchmark * stay_days * rooms + taxes_benchmark, 2)
             hotel_source = "estimated_benchmark"
@@ -90,18 +145,14 @@ class BudgetIntelligenceAgent(TravelAgent):
             hotel_notes = f"Benchmark estimate ({stay_days} nights × {rooms} room(s) @ {curr} {nightly_benchmark}/night + 12% taxes)"
 
         # 3. Transparent Food Per-Person/Per-Day Model
-        daily_food_pp = 1200.0 if is_inr else 40.0
         food_cost = round(daily_food_pp * travelers * stay_days, 2)
         food_notes = f"{curr} {daily_food_pp}/traveler/day (breakfast, lunch, dinner, cafe) × {travelers} travelers × {stay_days} days"
 
         # 4. Transparent Local Transport Model
-        daily_transit_pp = 500.0 if is_inr else 20.0
-        airport_transfers = 1200.0 if is_inr else 50.0
         transport_cost = round(daily_transit_pp * travelers * stay_days + airport_transfers, 2)
         transport_notes = f"Airport transfers ({curr} {airport_transfers}) + metro/rideshare ({curr} {daily_transit_pp}/day/traveler)"
 
         # 5. Activities & Sightseeing Model
-        daily_activity_pp = 600.0 if is_inr else 35.0
         activity_days = min(stay_days, 5)
         activities_cost = round(daily_activity_pp * travelers * activity_days, 2)
         activities_notes = f"Monument entry fees & cultural activities ({curr} {daily_activity_pp}/day/traveler × {activity_days} active days)"

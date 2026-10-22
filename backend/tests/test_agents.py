@@ -16,6 +16,7 @@ class TestAgents(unittest.TestCase):
             "transportation_route",
             "budget_intelligence",
             "personalization_recommendation",
+            "itinerary_compiler",
             "travel_support",
         }
         self.assertTrue(required.issubset(set(registry)))
@@ -33,6 +34,8 @@ class TestAgents(unittest.TestCase):
         result = TripService().plan_trip(trip_spec)
         self.assertEqual(result.summary.startswith("Trip from DEL to PAR"), True)
         self.assertEqual(result.missing_fields, [])
+        self.assertIn("itinerary_compiler", result.results)
+        self.assertEqual(result.results["itinerary_compiler"]["status"], "ok")
 
     def test_trip_service_requests_missing_fields(self):
         result = TripService().plan_trip(TripSpec.from_dict({"origin": "DEL", "destination": "PAR"}))

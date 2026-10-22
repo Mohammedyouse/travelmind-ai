@@ -1143,7 +1143,18 @@ export function PlanDetailView({
                     </div>
 
                     <div className="agent-logs-table">
-                        {['travel_concierge', 'flight_intelligence', 'accommodation_intelligence', 'destination_discovery', 'transportation_route', 'budget_intelligence', 'personalization_recommendation', 'travel_support'].map(name => {
+                        {Array.from(new Set([
+                            'travel_concierge',
+                            'flight_intelligence',
+                            'accommodation_intelligence',
+                            'destination_discovery',
+                            'transportation_route',
+                            'budget_intelligence',
+                            'personalization_recommendation',
+                            'itinerary_compiler',
+                            'travel_support',
+                            ...Object.keys(agentExecutions)
+                        ])).map(name => {
                             const exec = agentExecutions[name]
                             const status = exec?.status || 'ok'
                             return (

@@ -8,6 +8,7 @@ from .destination_discovery import DestinationDiscoveryAgent
 from .transportation_route import TransportationRouteAgent
 from .budget_intelligence import BudgetIntelligenceAgent
 from .personalization_recommendation import PersonalizationRecommendationAgent
+from .itinerary_compiler import ItineraryCompilerAgent
 from .travel_support import TravelSupportAgent
 
 
@@ -21,6 +22,7 @@ __all__ = [
     "TransportationRouteAgent",
     "BudgetIntelligenceAgent",
     "PersonalizationRecommendationAgent",
+    "ItineraryCompilerAgent",
     "TravelSupportAgent",
     "build_agent_registry",
 ]
@@ -37,6 +39,7 @@ def build_agent_registry() -> dict[str, TravelAgent]:
             TransportationRouteAgent(),
             BudgetIntelligenceAgent(),
             PersonalizationRecommendationAgent(),
+            ItineraryCompilerAgent(),
             TravelSupportAgent(),
         )
     }

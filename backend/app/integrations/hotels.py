@@ -13,6 +13,7 @@ from typing import Any, Optional
 from ..core.types import ProviderResult
 from ..db import get_cached_accommodations, save_cached_accommodations
 from .base import Transport, resolve_iata, urllib_transport
+from .currency import build_currency_provider
 from .places import haversine_km
 
 VERIFIED_DESTINATION_HOTELS: dict[str, list[dict[str, Any]]] = {
@@ -264,7 +265,19 @@ class DirectoryHotelProvider(HotelProvider):
                 matched_city = city
                 break
 
-        is_inr = currency.upper() == "INR"
+        curr_upper = (currency or "USD").upper()
+        is_inr = curr_upper == "INR"
+        is_usd = curr_upper == "USD"
+        fx_rate = 1.0
+        if is_inr:
+            fx_rate = 84.0
+        elif not is_usd:
+            try:
+                rates_res = build_currency_provider().get_rates("USD")
+                rates = rates_res.data.get("rates", {}) if rates_res.ok and rates_res.data else {}
+                fx_rate = float(rates.get(curr_upper, 1.0))
+            except Exception:
+                fx_rate = 1.0
 
         stay_nights = 1
         if check_in and check_out:
@@ -282,10 +295,13 @@ class DirectoryHotelProvider(HotelProvider):
         if cached and len(cached) >= 10:
             formatted_hotels = []
             for h in cached[:max_results]:
+                usd_base = float(h.get("price_usd") or (round(float(h["price_inr"]) / 84.0, 2) if h.get("price_inr") else float(h.get("price_per_night", 80.0))))
                 if is_inr:
-                    nightly_price = float(h.get("price_inr") or round(float(h.get("price_usd") or h.get("price_per_night", 80.0)) * 84.0, 2))
+                    nightly_price = float(h.get("price_inr") or round(usd_base * 84.0, 2))
+                elif is_usd:
+                    nightly_price = round(usd_base, 2)
                 else:
-                    nightly_price = float(h.get("price_usd") or (round(float(h["price_inr"]) / 84.0, 2) if h.get("price_inr") else float(h.get("price_per_night", 80.0))))
+                    nightly_price = round(usd_base * fx_rate, 2)
                 taxes = round(nightly_price * stay_nights * rooms * 0.12, 2)
                 total_stay = round(nightly_price * stay_nights * rooms + taxes, 2)
                 hotel_name = h["name"]
@@ -380,8 +396,13 @@ class DirectoryHotelProvider(HotelProvider):
         # Format results
         hotels = []
         for h in combined_raw[:max_results]:
-            nightly = h.get("price_inr", round(h.get("price_usd", 100.0) * 84.0, 2)) if is_inr else h.get("price_usd", round(h.get("price_inr", 8400.0) / 84.0, 2))
-            nightly_price = float(nightly)
+            usd_base = float(h.get("price_usd") or (round(float(h["price_inr"]) / 84.0, 2) if h.get("price_inr") else float(h.get("price_per_night", 80.0))))
+            if is_inr:
+                nightly_price = float(h.get("price_inr") or round(usd_base * 84.0, 2))
+            elif is_usd:
+                nightly_price = round(usd_base, 2)
+            else:
+                nightly_price = round(usd_base * fx_rate, 2)
             taxes = round(nightly_price * stay_nights * rooms * 0.12, 2)
             total_stay = round(nightly_price * stay_nights * rooms + taxes, 2)
 

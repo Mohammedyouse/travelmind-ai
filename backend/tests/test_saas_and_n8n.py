@@ -147,6 +147,78 @@ class TestSaaSAndN8NIntegration(unittest.TestCase):
         res = self.client.get("/api/v1/admin/stats", headers=headers)
         self.assertEqual(res.status_code, 403)
 
+    def test_stripe_checkout_and_webhook_event(self):
+        token, _ = self.register_user("StripeUser")
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 1. Test checkout session creation
+        checkout_res = self.client.post("/api/v1/payments/checkout", headers=headers, json={"tier": "pro"})
+        self.assertEqual(checkout_res.status_code, 200)
+        cdata = checkout_res.json()
+        self.assertTrue(cdata["session_id"].startswith("cs_test_"))
+        self.assertIn("checkout.stripe.com/test", cdata["checkout_url"])
+
+        # 2. Test webhook receiver with metadata user_id & tier
+        me = self.client.get("/api/v1/auth/me", headers=headers).json()
+        user_id = me["user"]["sub"]
+        webhook_payload = {
+            "id": f"evt_test_{uuid.uuid4()}",
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "id": f"cs_test_{uuid.uuid4()}",
+                    "client_reference_id": user_id,
+                    "amount_total": 1499,
+                    "currency": "usd",
+                    "metadata": {"tier": "pro", "user_id": user_id},
+                }
+            }
+        }
+        webhook_res = self.client.post("/api/v1/payments/webhook", json=webhook_payload)
+        self.assertEqual(webhook_res.status_code, 200)
+        self.assertEqual(webhook_res.json()["received"], True)
+
+        # 3. Verify user subscription updated to Pro and received notification
+        updated_me = self.client.get("/api/v1/auth/me", headers=headers).json()
+        self.assertEqual(updated_me["subscription"]["tier"], "pro")
+
+        notifs = self.client.get("/api/v1/notifications", headers=headers).json()
+        self.assertTrue(any("Upgraded to Pro" in n.get("title", "") for n in notifs))
+
+    def test_unconfigured_providers_honest_fallbacks(self):
+        token, _ = self.register_user("FallbackUser")
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Plan a trip with unconfigured external API keys
+        trip_res = self.client.post("/api/v1/trips", headers=headers, json={
+            "origin": "NYC",
+            "destination": "PAR",
+            "departure_date": "2027-06-01",
+            "return_date": "2027-06-06",
+            "budget": 3500,
+            "currency": "USD",
+            "travelers": 2,
+        })
+        self.assertEqual(trip_res.status_code, 200)
+        tdata = trip_res.json()
+        results = tdata.get("agent_results") or tdata.get("plan_results") or {}
+
+        # Flight intelligence must report honest unconfigured status without crashing
+        flight_data = results["flight_intelligence"]["data"]
+        self.assertEqual(flight_data["provider_status"], "unconfigured")
+        self.assertIn("google.com/travel/flights", flight_data["direct_search_url"])
+        self.assertEqual(flight_data["total_offers"], 0)
+
+        # Accommodations must report verified properties with reference rate tag
+        hotels = results["accommodation_intelligence"]["data"]["hotels"]
+        self.assertTrue(len(hotels) > 0)
+        self.assertIn("pricing_type", hotels[0])
+
+        # Itinerary Compiler must have synthesized days without error
+        itinerary = results["itinerary"]
+        self.assertTrue(len(itinerary["days"]) >= 4)
+        self.assertEqual(results["itinerary_compiler"]["status"], "ok")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,13 +15,40 @@ import { NotificationsModal } from './components/NotificationsModal'
 import { AdminView } from './components/AdminView'
 
 export default function App() {
-    const { user, token, isRestoring, login, register, logout, restoreMessage } = useAuth()
+    const {
+        user,
+        token,
+        isRestoring,
+        login,
+        register,
+        logout,
+        restoreMessage,
+        networkError,
+        clearRestoreMessage,
+        clearNetworkError,
+    } = useAuth()
 
     // Navigation & View State
     const [activeTab, setActiveTab] = useState<string>('landing')
     const [showAuthModal, setShowAuthModal] = useState<boolean>(false)
     const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
     const [showNotifModal, setShowNotifModal] = useState<boolean>(false)
+
+    // Auto-open auth modal if session expired message appears and user is not logged in
+    useEffect(() => {
+        if (restoreMessage && !user) {
+            setShowAuthModal(true)
+            setAuthMode('login')
+        }
+    }, [restoreMessage, user])
+
+    function closeAuthModal() {
+        setShowAuthModal(false)
+        setAuthError('')
+        setAuthPending(false)
+        clearRestoreMessage()
+        clearNetworkError()
+    }
 
     // Data State
     const [trips, setTrips] = useState<TripRecord[]>([])
@@ -70,15 +97,12 @@ export default function App() {
             return
         }
 
-        // Set default logged in view to dashboard
-        setActiveTab('dashboard')
+        // Set default logged in view to dashboard only if on landing
+        setActiveTab(prev => (prev === 'landing' ? 'dashboard' : prev))
 
         // Fetch user trips
         api.trips(token).then(savedTrips => {
             setTrips(savedTrips)
-            if (savedTrips.length > 0 && !selectedTrip) {
-                // optionally default selected trip
-            }
         }).catch(() => {})
 
         // Fetch notifications
@@ -95,6 +119,7 @@ export default function App() {
     // Auth Submit handler
     async function handleAuthSubmit(e: React.FormEvent) {
         e.preventDefault()
+        if (authPending) return
         setAuthPending(true)
         setAuthError('')
         try {
@@ -103,7 +128,7 @@ export default function App() {
             } else {
                 await login(authEmail, authPassword)
             }
-            setShowAuthModal(false)
+            closeAuthModal()
             setAuthEmail('')
             setAuthPassword('')
             setAuthFullName('')
@@ -224,6 +249,7 @@ export default function App() {
                 onToggleTheme={toggleTheme}
                 onOpenNotifications={() => setShowNotifModal(true)}
                 onOpenAuth={() => {
+                    closeAuthModal()
                     setAuthMode('login')
                     setShowAuthModal(true)
                 }}
@@ -240,6 +266,12 @@ export default function App() {
             />
 
             {/* Global Notice / Error Messages */}
+            {networkError && !showAuthModal && (
+                <div className="global-banner error-banner" onClick={clearNetworkError}>
+                    <span>⚠️ {networkError}</span>
+                    <button className="dismiss-btn">&times;</button>
+                </div>
+            )}
             {noticeMsg && (
                 <div className="global-banner success-banner" onClick={() => setNoticeMsg('')}>
                     <span>✓ {noticeMsg}</span>
@@ -353,17 +385,18 @@ export default function App() {
 
             {/* Authentication Modal */}
             {showAuthModal && (
-                <div className="modal-backdrop" onClick={() => setShowAuthModal(false)}>
+                <div className="modal-backdrop" onClick={closeAuthModal}>
                     <div className="modal-dialog auth-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div>
                                 <span className="section-kicker">TravelMind Studio</span>
                                 <h3>{authMode === 'login' ? 'Welcome Back' : 'Create Your Account'}</h3>
                             </div>
-                            <button className="close-btn" onClick={() => setShowAuthModal(false)}>&times;</button>
+                            <button className="close-btn" onClick={closeAuthModal}>&times;</button>
                         </div>
 
                         {restoreMessage && <div className="notice-banner">{restoreMessage}</div>}
+                        {networkError && <div className="error-banner">{networkError}</div>}
                         {authError && <div className="error-banner">{authError}</div>}
 
                         <form onSubmit={handleAuthSubmit} className="modal-form">

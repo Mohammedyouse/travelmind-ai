@@ -31,6 +31,7 @@ AGENT_DEPENDENCIES: dict[str, tuple[str, ...]] = {
     "transportation_route": ("destination_discovery",),
     "budget_intelligence": ("flight_intelligence", "accommodation_intelligence", "destination_discovery"),
     "personalization_recommendation": ("destination_discovery", "budget_intelligence"),
+    "itinerary_compiler": ("destination_discovery", "accommodation_intelligence", "personalization_recommendation"),
     "travel_support": ("travel_concierge", "destination_discovery"),
 }
 
@@ -335,7 +336,8 @@ Do NOT invent fake flight numbers or fake hotel prices. Use the real attractions
 
         gemini_invoked = False
         if not itinerary:
-            itinerary = self._build_grounded_itinerary(trip_spec, duration_days, results)
+            compiler_itinerary = results.get("itinerary_compiler", {}).get("data", {}).get("itinerary")
+            itinerary = compiler_itinerary or self._build_grounded_itinerary(trip_spec, duration_days, results)
         else:
             gemini_invoked = True
 

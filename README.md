@@ -328,20 +328,28 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ---
 
-## 🧪 Automated Test Suite
+## 🧪 Automated Test Suites & Quality Verification
 
 TravelMind AI maintains a strict 100% test passing standard across all modules:
 
 ```bash
-# Run backend test suite (53 tests)
+# 1. Run all backend tests (86 tests: auth, multi-agent DAG, deterministic budget, Amadeus, foundation)
 python -m unittest discover -s backend/tests -p "test_*.py"
 
-# Run data science pipeline tests (8 tests)
-python -m unittest discover -s data_science/tests -p "test_*.py"
+# 2. Run comprehensive multi-currency budget tests
+python -m unittest backend.tests.test_budget_comprehensive
 
-# Build and validate frontend TypeScript
+# 3. Run frontend unit tests (session restoration, token expiration, race condition prevention)
+cd frontend && npm test
+
+# 4. Validate TypeScript types and compile production bundle
 cd frontend && npm run build
+
+# 5. Run live visible browser QA audit (Edge / Chrome)
+python scripts/live_qa_master_audit.py
 ```
+
+For real-time data provider details and fallback behavior, consult [`INTEGRATION_STATUS.md`](./INTEGRATION_STATUS.md).
 
 ---
 
