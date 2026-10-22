@@ -1,0 +1,19 @@
+# Default: normalize line endings to LF on commit
+* text=auto eol=lf
+
+# Explicitly keep shell scripts as LF (required for Linux/Render/Docker)
+*.sh text eol=lf
+
+# Windows-specific files keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files — never touch line endings
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.db binary
+*.sqlite binary
