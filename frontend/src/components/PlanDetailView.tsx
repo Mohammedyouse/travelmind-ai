@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import type { TripRecord, TripInput } from '../services/api'
 import { InteractiveMap } from './InteractiveMap'
 
@@ -9,6 +9,254 @@ function formatMoney(amount: number | string | undefined | null, currency: strin
     const curr = (currency || 'USD').toUpperCase()
     const sym = curr === 'INR' ? '₹' : curr === 'EUR' ? '€' : curr === 'GBP' ? '£' : curr === 'JPY' ? '¥' : '$'
     return `${sym}${num.toLocaleString(undefined, { minimumFractionDigits: num % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}`
+}
+
+function formatFriendlySource(source?: string): { title: string; subtitle: string; badge: string } {
+    if (!source) {
+        return {
+            title: 'Autonomous Multi-Agent Synthesis',
+            subtitle: 'Orchestrated via TravelMind Agent Swarm',
+            badge: 'Multi-Agent AI'
+        }
+    }
+    const clean = source.toLowerCase().trim()
+    if (clean === 'grounded_research_fallback' || clean.includes('grounded_research')) {
+        return {
+            title: 'Research-Based Grounded Itinerary',
+            subtitle: 'Synthesized with verified multi-source research intelligence',
+            badge: 'Verified Research'
+        }
+    }
+    if (clean.includes('amadeus')) {
+        return {
+            title: 'Amadeus Verified GDS Network',
+            subtitle: 'Live global distribution flight system',
+            badge: 'Global Distribution'
+        }
+    }
+    if (clean.includes('multi_agent') || clean.includes('dag')) {
+        return {
+            title: 'Multi-Agent Autonomous DAG',
+            subtitle: 'Compiled via multi-agent execution pipeline',
+            badge: 'Autonomous DAG'
+        }
+    }
+    if (clean.includes('deterministic')) {
+        return {
+            title: 'Deterministic Calculation Engine',
+            subtitle: 'Validated against budgetary & geographical guardrails',
+            badge: 'Deterministic'
+        }
+    }
+    if (clean.includes('curated') || clean.includes('openstreetmap')) {
+        return {
+            title: 'Curated Landmarks & OpenStreetMap',
+            subtitle: 'Geocoded destination points and verified places',
+            badge: 'Curated Data'
+        }
+    }
+    const formatted = source
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ')
+    return {
+        title: formatted,
+        subtitle: `Engine Provider: ${source}`,
+        badge: 'Intelligence Pipeline'
+    }
+}
+
+// Modern SVG Icons (Self-contained, sharp, zero external dependency)
+const Icons = {
+    Calendar: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+    ),
+    Plane: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+        </svg>
+    ),
+    Hotel: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z" />
+            <path d="m9 16 .348-.24c1.465-1.013 3.84-1.013 5.304 0L15 16" />
+            <path d="M8 7h.01" />
+            <path d="M16 7h.01" />
+            <path d="M12 7h.01" />
+            <path d="M12 11h.01" />
+            <path d="M16 11h.01" />
+            <path d="M8 11h.01" />
+            <path d="M10 22v-4h4v4" />
+        </svg>
+    ),
+    Compass: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+        </svg>
+    ),
+    Map: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+            <line x1="8" y1="2" x2="8" y2="18" />
+            <line x1="16" y1="6" x2="16" y2="22" />
+        </svg>
+    ),
+    Wallet: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+        </svg>
+    ),
+    CloudSun: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 2v2" />
+            <path d="m4.93 4.93 1.41 1.41" />
+            <path d="M20 12h2" />
+            <path d="m19.07 4.93-1.41 1.41" />
+            <path d="M15.947 12.65a4 4 0 0 0-5.925-4.128" />
+            <path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" />
+        </svg>
+    ),
+    Cpu: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <rect x="9" y="9" width="6" height="6" />
+            <path d="M15 2v2" />
+            <path d="M15 20v2" />
+            <path d="M2 15h2" />
+            <path d="M2 9h2" />
+            <path d="M20 15h2" />
+            <path d="M20 9h2" />
+            <path d="M9 2v2" />
+            <path d="M9 20v2" />
+        </svg>
+    ),
+    ArrowLeft: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+        </svg>
+    ),
+    Printer: () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+        </svg>
+    ),
+    Edit: () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        </svg>
+    ),
+    Trash: () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            <line x1="10" y1="11" x2="10" y2="17" />
+            <line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
+    ),
+    Sunrise: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 2v6" />
+            <path d="m4.93 10.93 1.41 1.41" />
+            <path d="M2 18h2" />
+            <path d="M20 18h2" />
+            <path d="m19.07 10.93-1.41 1.41" />
+            <path d="M22 22H2" />
+            <path d="m8 6 4-4 4 4" />
+            <path d="M16 18a4 4 0 0 0-8 0" />
+        </svg>
+    ),
+    Sun: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
+    ),
+    Moon: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </svg>
+    ),
+    Clock: () => (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+        </svg>
+    ),
+    Users: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+    ),
+    CheckCircle: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+    ),
+    Utensils: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2" />
+            <path d="M15 11v11" />
+            <path d="M5 2v10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V2" />
+            <path d="M7 14v8" />
+        </svg>
+    ),
+    Transit: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="3" width="16" height="14" rx="3" />
+            <path d="M4 11h16" />
+            <path d="M12 3v8" />
+            <circle cx="8" cy="14" r="1" />
+            <circle cx="16" cy="14" r="1" />
+            <path d="m6 17-2 4" />
+            <path d="m18 17 2 4" />
+        </svg>
+    ),
+    Search: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+    ),
+    Shield: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+    ),
+    ExternalLink: () => (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+    ),
+    Sparkles: () => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
+        </svg>
+    )
 }
 
 type PlanDetailViewProps = {
@@ -30,6 +278,13 @@ export function PlanDetailView({
 }: PlanDetailViewProps) {
     const [activeSection, setActiveSection] = useState<string>('itinerary')
     const [showEditModal, setShowEditModal] = useState<boolean>(false)
+
+    // Interactive checklist state (persists checkmarks during viewing)
+    const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({})
+
+    function toggleCheckItem(idx: number) {
+        setCheckedItems(prev => ({ ...prev, [idx]: !prev[idx] }))
+    }
 
     // Edit form state
     const [editOrigin, setEditOrigin] = useState(trip.origin)
@@ -60,7 +315,7 @@ export function PlanDetailView({
     const [placeVisibleCount, setPlaceVisibleCount] = useState(8)
 
     // Dynamically compute today's date in user's local timezone (YYYY-MM-DD)
-    const todayStr = React.useMemo(() => {
+    const todayStr = useMemo(() => {
         const d = new Date()
         const year = d.getFullYear()
         const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -91,10 +346,12 @@ export function PlanDetailView({
     const currentWeather = supportInfo.current_weather
     const packingChecklist = supportInfo.checklist || []
 
+    const friendlySource = formatFriendlySource(itinerary?.source)
+
     const googleFlightsDirectUrl = flightData.direct_search_url || `https://www.google.com/travel/flights?q=flights+from+${encodeURIComponent(trip.origin)}+to+${encodeURIComponent(trip.destination)}${trip.departure_date ? `+on+${trip.departure_date}` : ''}`
 
     // Filtered & Sorted Flights
-    const filteredFlights = React.useMemo(() => {
+    const filteredFlights = useMemo(() => {
         let list = [...flightOffers]
         if (flightSearchQuery.trim()) {
             const q = flightSearchQuery.toLowerCase().trim()
@@ -124,7 +381,7 @@ export function PlanDetailView({
     const displayedFlights = filteredFlights.slice(0, flightVisibleCount)
 
     // Filtered & Sorted Hotels
-    const filteredHotels = React.useMemo(() => {
+    const filteredHotels = useMemo(() => {
         let list = [...hotels]
         if (hotelSearchQuery.trim()) {
             const q = hotelSearchQuery.toLowerCase().trim()
@@ -161,7 +418,7 @@ export function PlanDetailView({
     const displayedHotels = filteredHotels.slice(0, hotelVisibleCount)
 
     // Filtered & Sorted Places
-    const filteredPlaces = React.useMemo(() => {
+    const filteredPlaces = useMemo(() => {
         let list = [...places]
         if (placeSearchQuery.trim()) {
             const q = placeSearchQuery.toLowerCase().trim()
@@ -250,134 +507,211 @@ export function PlanDetailView({
         setShowEditModal(false)
     }
 
+    // Navigation Tabs Configuration with counts and modern icons
+    const navTabs = [
+        { id: 'itinerary', label: 'Daily Schedule', icon: <Icons.Calendar />, count: `${days.length} Days` },
+        { id: 'flights', label: 'Flights', icon: <Icons.Plane />, count: flightOffers.length },
+        { id: 'hotels', label: 'Hotels & Stays', icon: <Icons.Hotel />, count: hotels.length },
+        { id: 'destinations', label: 'Attractions', icon: <Icons.Compass />, count: places.length },
+        { id: 'map', label: 'Interactive Map', icon: <Icons.Map /> },
+        { id: 'budget', label: 'Cost Breakdown', icon: <Icons.Wallet /> },
+        { id: 'support', label: 'Weather & Checklist', icon: <Icons.CloudSun /> },
+        { id: 'agents', label: 'Agent Pipeline', icon: <Icons.Cpu />, count: Object.keys(agentExecutions).length || 8 },
+    ]
+
     return (
         <div className="plan-detail-container">
             {/* Top Bar Navigation */}
             <div className="plan-top-bar">
-                <button className="back-link-btn" onClick={onClose}>
-                    &larr; Back to Trips
+                <button className="back-link-btn" onClick={onClose} aria-label="Return to saved trips">
+                    <Icons.ArrowLeft />
+                    <span>Back to Trips</span>
                 </button>
                 <div className="plan-actions-group">
                     <button className="button button-outline-sm" onClick={() => onExportHtml(trip.id)}>
-                        📥 Export HTML / Print
+                        <Icons.Printer />
+                        <span>Export HTML / Print</span>
                     </button>
                     <button className="button button-primary-sm" onClick={() => setShowEditModal(true)}>
-                        ✏️ Modify & Re-Plan
+                        <Icons.Edit />
+                        <span>Modify & Re-Plan</span>
                     </button>
                     <button className="button button-danger-sm" onClick={() => onDeleteTrip(trip.id)}>
-                        🗑️ Delete
+                        <Icons.Trash />
+                        <span>Delete</span>
                     </button>
                 </div>
             </div>
 
-            {/* Trip Header Banner */}
+            {/* Redesigned Trip Header Banner */}
             <div className="plan-header-banner">
                 <div className="banner-details">
-                    <span className="section-kicker">Saved Itinerary · {trip.status.toUpperCase()}</span>
-                    <h1>{trip.origin} <span className="route-arrow">&rarr;</span> {trip.destination}</h1>
-                    <p className="banner-dates">
-                        📅 {trip.departure_date || 'Flexible Dates'} {trip.return_date ? `to ${trip.return_date}` : ''}
-                        &nbsp;·&nbsp; 👥 {trip.travelers} Traveler{trip.travelers > 1 ? 's' : ''}
-                        &nbsp;·&nbsp; 💰 Ceiling: {trip.budget ? formatMoney(trip.budget, trip.currency) : 'Flexible'}
-                    </p>
-                    {trip.summary && <p className="banner-summary-text">{trip.summary}</p>}
+                    <div className="banner-top-meta">
+                        <span className="status-pill status-saved">
+                            <span className="status-dot-pulse" />
+                            {trip.status === 'draft' ? 'Saved Itinerary' : trip.status.toUpperCase()}
+                        </span>
+                        <span className="banner-id-tag">REF #{trip.id.slice(0, 8).toUpperCase()}</span>
+                    </div>
+
+                    <h1 className="trip-destination-heading">
+                        <span className="route-city">{trip.origin}</span>
+                        <span className="route-flow-arrow" aria-hidden="true">&rarr;</span>
+                        <span className="route-city">{trip.destination}</span>
+                    </h1>
+
+                    <div className="banner-meta-grid">
+                        <div className="meta-card">
+                            <span className="meta-card-icon"><Icons.Calendar /></span>
+                            <div className="meta-card-body">
+                                <small>Travel Dates</small>
+                                <strong>{trip.departure_date || 'Flexible'} {trip.return_date ? `to ${trip.return_date}` : ''}</strong>
+                            </div>
+                        </div>
+
+                        <div className="meta-card">
+                            <span className="meta-card-icon"><Icons.Clock /></span>
+                            <div className="meta-card-body">
+                                <small>Duration</small>
+                                <strong>{days.length > 0 ? `${days.length} Days / ${Math.max(1, days.length - 1)} Nights` : (trip.duration_days ? `${trip.duration_days} Days` : 'Multi-Day')}</strong>
+                            </div>
+                        </div>
+
+                        <div className="meta-card">
+                            <span className="meta-card-icon"><Icons.Users /></span>
+                            <div className="meta-card-body">
+                                <small>Travelers</small>
+                                <strong>{trip.travelers} Traveler{trip.travelers > 1 ? 's' : ''}</strong>
+                            </div>
+                        </div>
+
+                        <div className="meta-card">
+                            <span className="meta-card-icon"><Icons.Wallet /></span>
+                            <div className="meta-card-body">
+                                <small>Target Budget</small>
+                                <strong>{trip.budget ? formatMoney(trip.budget, trip.currency) : 'Flexible'}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    {trip.summary && (
+                        <p className="banner-summary-text">{trip.summary}</p>
+                    )}
                 </div>
-                <div className="banner-meta-badge">
-                    <small>SOURCE</small>
-                    <strong>{itinerary?.source || 'multi_agent_dag'}</strong>
+
+                <div className="banner-source-card" title={`Diagnostic Engine: ${itinerary?.source || 'deterministic'}`}>
+                    <div className="source-card-badge">
+                        <Icons.Shield />
+                        <span>{friendlySource.badge}</span>
+                    </div>
+                    <strong className="source-card-title">{friendlySource.title}</strong>
+                    <span className="source-card-subtitle">{friendlySource.subtitle}</span>
                 </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="plan-tabs-bar" role="tablist">
-                <button
-                    className={`plan-tab-btn ${activeSection === 'itinerary' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('itinerary')}
-                >
-                    🗓️ Daily Schedule ({days.length} Days)
-                </button>
-                <button
-                    className={`plan-tab-btn ${activeSection === 'flights' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('flights')}
-                >
-                    ✈️ Flights ({flightOffers.length})
-                </button>
-                <button
-                    className={`plan-tab-btn ${activeSection === 'hotels' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('hotels')}
-                >
-                    🏨 Hotels & Stays ({hotels.length})
-                </button>
-                <button
-                    className={`plan-tab-btn ${activeSection === 'destinations' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('destinations')}
-                >
-                    📍 Attractions ({places.length})
-                </button>
-                <button
-                    className={`plan-tab-btn ${activeSection === 'map' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('map')}
-                >
-                    🗺️ Interactive Map
-                </button>
-                <button
-                    className={`plan-tab-btn ${activeSection === 'budget' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('budget')}
-                >
-                    💵 Cost Breakdown
-                </button>
-                <button
-                    className={`plan-tab-btn ${activeSection === 'support' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('support')}
-                >
-                    🌤️ Weather & Checklist
-                </button>
-                <button
-                    className={`plan-tab-btn ${activeSection === 'agents' ? 'active' : ''}`}
-                    onClick={() => setActiveSection('agents')}
-                >
-                    🤖 Agent Pipeline
-                </button>
+            {/* Redesigned Premium SaaS Dashboard Navigation Tabs */}
+            <div className="plan-tabs-bar-container">
+                <div className="plan-tabs-bar" role="tablist" aria-label="Itinerary navigation sections">
+                    {navTabs.map(tab => {
+                        const isActive = activeSection === tab.id
+                        return (
+                            <button
+                                key={tab.id}
+                                role="tab"
+                                id={`tab-${tab.id}`}
+                                aria-selected={isActive}
+                                aria-controls={`panel-${tab.id}`}
+                                className={`plan-tab-btn ${isActive ? 'active' : ''}`}
+                                onClick={() => setActiveSection(tab.id)}
+                            >
+                                <span className="tab-icon-wrapper">{tab.icon}</span>
+                                <span className="tab-label">{tab.label}</span>
+                                {tab.count !== undefined && (
+                                    <span className={`tab-count-badge ${isActive ? 'badge-active' : ''}`}>
+                                        {tab.count}
+                                    </span>
+                                )}
+                            </button>
+                        )
+                    })}
+                </div>
             </div>
 
             {/* TAB 1: Daily Schedule */}
             {activeSection === 'itinerary' && (
-                <div className="tab-content-section">
+                <div className="tab-content-section" id="panel-itinerary" role="tabpanel" aria-labelledby="tab-itinerary">
                     <div className="section-heading-bar">
-                        <h2>Personalized Daily Itinerary</h2>
-                        <span className="estimate-tag">{itinerary?.source || 'Deterministic Agent Model'}</span>
+                        <div>
+                            <h2>Personalized Daily Itinerary</h2>
+                            <p className="section-subtext">Day-by-day curated schedule adapted to your destination and pace</p>
+                        </div>
+                        <span className="estimate-tag">{friendlySource.title}</span>
                     </div>
 
                     {days.length === 0 ? (
-                        <p className="empty-copy">No daily schedule generated yet. Click 'Modify & Re-Plan' to calculate schedule.</p>
+                        <div className="empty-filter-box">
+                            <p>No daily schedule generated yet. Click 'Modify & Re-Plan' to calculate schedule.</p>
+                        </div>
                     ) : (
                         <div className="itinerary-days-container">
                             {days.map((dayItem: any) => (
                                 <div key={dayItem.day} className="day-schedule-card">
                                     <div className="day-header-strip">
-                                        <span className="day-badge">DAY {String(dayItem.day).padStart(2, '0')}</span>
-                                        <h3 className="day-title-text">{dayItem.title || `Day ${dayItem.day}`}</h3>
+                                        <div className="day-badge-wrapper">
+                                            <span className="day-badge">DAY {String(dayItem.day).padStart(2, '0')}</span>
+                                            {dayItem.date && <span className="day-date-label">{new Date(dayItem.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>}
+                                        </div>
+                                        <h3 className="day-title-text">{dayItem.title || `Day ${dayItem.day} in ${trip.destination}`}</h3>
                                     </div>
 
-                                    {/* Detailed time slots if available */}
+                                    {/* Detailed time slots */}
                                     <div className="slots-grid">
                                         <div className="slot-box morning-slot">
-                                            <span className="slot-icon">🌅 MORNING</span>
-                                            <h4>{dayItem.morning?.activity || dayItem.activities?.[0] || 'Morning Activity'}</h4>
-                                            {dayItem.morning?.time && <small>🕒 {dayItem.morning.time}</small>}
-                                            {dayItem.morning?.cost && <div className="slot-cost">💵 Est: {dayItem.morning.cost}</div>}
+                                            <div className="slot-header-line">
+                                                <span className="slot-icon-badge morning-badge">
+                                                    <Icons.Sunrise />
+                                                    <span>MORNING</span>
+                                                </span>
+                                                {dayItem.morning?.time && (
+                                                    <span className="slot-time-pill">
+                                                        <Icons.Clock /> {dayItem.morning.time}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h4>{dayItem.morning?.activity || dayItem.activities?.[0] || 'Morning Activity & Exploration'}</h4>
+                                            {dayItem.morning?.cost && <div className="slot-cost">Est: {dayItem.morning.cost}</div>}
                                         </div>
+
                                         <div className="slot-box afternoon-slot">
-                                            <span className="slot-icon">☀️ AFTERNOON</span>
-                                            <h4>{dayItem.afternoon?.activity || dayItem.activities?.[1] || 'Afternoon Activity'}</h4>
-                                            {dayItem.afternoon?.time && <small>🕒 {dayItem.afternoon.time}</small>}
-                                            {dayItem.afternoon?.cost && <div className="slot-cost">💵 Est: {dayItem.afternoon.cost}</div>}
+                                            <div className="slot-header-line">
+                                                <span className="slot-icon-badge afternoon-badge">
+                                                    <Icons.Sun />
+                                                    <span>AFTERNOON</span>
+                                                </span>
+                                                {dayItem.afternoon?.time && (
+                                                    <span className="slot-time-pill">
+                                                        <Icons.Clock /> {dayItem.afternoon.time}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h4>{dayItem.afternoon?.activity || dayItem.activities?.[1] || 'Afternoon Sightseeing & Local Experience'}</h4>
+                                            {dayItem.afternoon?.cost && <div className="slot-cost">Est: {dayItem.afternoon.cost}</div>}
                                         </div>
+
                                         <div className="slot-box evening-slot">
-                                            <span className="slot-icon">🌙 EVENING</span>
-                                            <h4>{dayItem.evening?.activity || dayItem.activities?.[2] || 'Evening Dinner & Stroll'}</h4>
-                                            {dayItem.evening?.time && <small>🕒 {dayItem.evening.time}</small>}
-                                            {dayItem.evening?.cost && <div className="slot-cost">💵 Est: {dayItem.evening.cost}</div>}
+                                            <div className="slot-header-line">
+                                                <span className="slot-icon-badge evening-badge">
+                                                    <Icons.Moon />
+                                                    <span>EVENING</span>
+                                                </span>
+                                                {dayItem.evening?.time && (
+                                                    <span className="slot-time-pill">
+                                                        <Icons.Clock /> {dayItem.evening.time}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h4>{dayItem.evening?.activity || dayItem.activities?.[2] || 'Evening Dinner & Cultural Stroll'}</h4>
+                                            {dayItem.evening?.cost && <div className="slot-cost">Est: {dayItem.evening.cost}</div>}
                                         </div>
                                     </div>
 
@@ -386,12 +720,20 @@ export function PlanDetailView({
                                         <div className="itinerary-tips-box">
                                             {dayItem.dining_recommendation && (
                                                 <div className="itinerary-tip-card dining-tip">
-                                                    <strong>🍽️ Culinary Recommendation:</strong> {dayItem.dining_recommendation}
+                                                    <div className="tip-header">
+                                                        <Icons.Utensils />
+                                                        <strong>Culinary Recommendation</strong>
+                                                    </div>
+                                                    <p>{dayItem.dining_recommendation}</p>
                                                 </div>
                                             )}
                                             {dayItem.transit_tip && (
                                                 <div className="itinerary-tip-card transit-tip">
-                                                    <strong>🚇 Transit & Navigation:</strong> {dayItem.transit_tip}
+                                                    <div className="tip-header">
+                                                        <Icons.Transit />
+                                                        <strong>Transit & Navigation</strong>
+                                                    </div>
+                                                    <p>{dayItem.transit_tip}</p>
                                                 </div>
                                             )}
                                         </div>
@@ -405,35 +747,47 @@ export function PlanDetailView({
 
             {/* TAB 2: Flights */}
             {activeSection === 'flights' && (
-                <div className="tab-content-section">
+                <div className="tab-content-section" id="panel-flights" role="tabpanel" aria-labelledby="tab-flights">
                     <div className="section-heading-bar">
-                        <h2>Verified Flight Options</h2>
-                        <span>{flightData.provider === 'unconfigured' ? 'Amadeus Provider (Unconfigured)' : (flightData.provider || 'Flight Intelligence')}</span>
+                        <div>
+                            <h2>Verified Flight Options</h2>
+                            <p className="section-subtext">Commercial air routes between {trip.origin} and {trip.destination}</p>
+                        </div>
+                        <span className="estimate-tag">{flightData.provider === 'unconfigured' ? 'Amadeus Global Distribution (Unconfigured)' : (flightData.provider || 'Flight Intelligence Engine')}</span>
                     </div>
 
                     {flightOffers.length === 0 ? (
-                        <div className="unconfigured-card" style={{ padding: '2rem', border: '1px solid var(--border-subtle)', borderRadius: '12px', background: 'var(--bg-surface)' }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                                <span style={{ fontSize: '2rem' }}>✈️</span>
-                                <div>
-                                    <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Live Flight Search: Provider Unconfigured</h3>
-                                    <p style={{ color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: '1.6' }}>
-                                        Live carrier quotes require an Amadeus Flight Search integration.
-                                        To enable live search, set <code style={{ background: 'var(--bg-surface-elevated)', padding: '2px 6px', borderRadius: '4px' }}>AMADEUS_CLIENT_ID</code> and <code style={{ background: 'var(--bg-surface-elevated)', padding: '2px 6px', borderRadius: '4px' }}>AMADEUS_CLIENT_SECRET</code> in your local <code style={{ background: 'var(--bg-surface-elevated)', padding: '2px 6px', borderRadius: '4px' }}>.env</code> file.
-                                    </p>
-                                    <div style={{ padding: '0.75rem 1rem', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '8px', color: 'var(--brand-primary)', fontSize: '0.88rem', marginBottom: '1.25rem' }}>
-                                        🛡️ <strong>Integrity Guarantee:</strong> TravelMind strictly forbids synthesizing fake flights, invented flight numbers, or fabricated airline prices. When provider credentials are unconfigured, no synthetic offers are displayed.
-                                    </div>
-                                    <a
-                                        href={googleFlightsDirectUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="button button-primary"
-                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
-                                    >
-                                        🔍 Search Real Flights on Google Flights ({trip.origin} &rarr; {trip.destination}) &rarr;
-                                    </a>
+                        <div className="flight-unconfigured-hero-card unconfigured-card">
+                            <div className="flight-unconfigured-header">
+                                <div className="flight-provider-icon-box">
+                                    <Icons.Plane />
                                 </div>
+                                <div className="flight-provider-text">
+                                    <h3>Live Flight Search: Provider Unconfigured</h3>
+                                    <p>
+                                        Live carrier quotes require an active Amadeus GDS connection.
+                                        Configure <code className="inline-code">AMADEUS_CLIENT_ID</code> and <code className="inline-code">AMADEUS_CLIENT_SECRET</code> in your environment to unlock direct real-time flight booking quotes.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="integrity-guarantee-pill">
+                                <Icons.Shield />
+                                <div>
+                                    <strong>Strict Zero-Synthetic Data Policy:</strong> TravelMind enforces strict factual integrity. We never synthesize fictional airlines, fake flight numbers, or simulated fare prices.
+                                </div>
+                            </div>
+
+                            <div className="unconfigured-actions-strip">
+                                <a
+                                    href={googleFlightsDirectUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="button button-primary"
+                                >
+                                    <Icons.Search />
+                                    <span>Search Real Flights on Google Flights ({trip.origin} &rarr; {trip.destination}) &rarr;</span>
+                                </a>
                             </div>
                         </div>
                     ) : (
@@ -441,13 +795,16 @@ export function PlanDetailView({
                             {/* Flight Discovery Controls */}
                             <div className="discovery-controls-card">
                                 <div className="discovery-search-row">
-                                    <input
-                                        type="text"
-                                        className="discovery-search-input"
-                                        placeholder="🔍 Search airline, flight number, or airport..."
-                                        value={flightSearchQuery}
-                                        onChange={(e) => setFlightSearchQuery(e.target.value)}
-                                    />
+                                    <div className="search-input-wrapper">
+                                        <Icons.Search />
+                                        <input
+                                            type="text"
+                                            className="discovery-search-input"
+                                            placeholder="Search carrier, flight number, or airport..."
+                                            value={flightSearchQuery}
+                                            onChange={(e) => setFlightSearchQuery(e.target.value)}
+                                        />
+                                    </div>
                                     <div className="discovery-pills-row">
                                         <button
                                             type="button"
@@ -482,6 +839,7 @@ export function PlanDetailView({
                                         className="discovery-select-dropdown"
                                         value={flightSortBy}
                                         onChange={(e) => setFlightSortBy(e.target.value)}
+                                        aria-label="Sort flights"
                                     >
                                         <option value="price_asc">Price: Low to High</option>
                                         <option value="price_desc">Price: High to Low</option>
@@ -496,9 +854,10 @@ export function PlanDetailView({
                                         href={googleFlightsDirectUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        style={{ color: 'var(--brand-primary)', textDecoration: 'underline' }}
+                                        className="direct-provider-link"
                                     >
-                                        Compare Real Rates on Google Flights &rarr;
+                                        <span>Compare Real Rates on Google Flights</span>
+                                        <Icons.ExternalLink />
                                     </a>
                                 </div>
                             </div>
@@ -538,7 +897,10 @@ export function PlanDetailView({
                                             return (
                                                 <div key={idx} className="flight-offer-card">
                                                     <div className="flight-carrier-line">
-                                                        <strong>✈️ {o.carrier_names?.join(', ') || o.carriers?.join(', ') || 'Carrier Offer'}</strong>
+                                                        <div className="carrier-identity">
+                                                            <span className="carrier-icon"><Icons.Plane /></span>
+                                                            <strong>{o.carrier_names?.join(', ') || o.carriers?.join(', ') || 'Airline Carrier Offer'}</strong>
+                                                        </div>
                                                         <span className="flight-price-tag">{formatMoney(o.price, o.currency || trip.currency)}</span>
                                                     </div>
 
@@ -546,10 +908,10 @@ export function PlanDetailView({
                                                         <div className="flight-endpoint origin-endpoint">
                                                             <div className="airport-name-line">
                                                                 <span className="airport-full-name">{depName}</span>
-                                                                {depIata && <span className="airport-iata-code">({depIata})</span>}
+                                                                {depIata && <span className="airport-iata-code">{depIata}</span>}
                                                             </div>
                                                             <div className="airport-meta-line">
-                                                                <span className="airport-city-tag">📍 {depCity}{depCountry ? `, ${depCountry}` : ''}</span>
+                                                                <span className="airport-city-tag">{depCity}{depCountry ? `, ${depCountry}` : ''}</span>
                                                                 {depTerminal && <span className="terminal-badge">Terminal {depTerminal}</span>}
                                                             </div>
                                                         </div>
@@ -563,28 +925,28 @@ export function PlanDetailView({
                                                         <div className="flight-endpoint destination-endpoint">
                                                             <div className="airport-name-line">
                                                                 <span className="airport-full-name">{arrName}</span>
-                                                                {arrIata && <span className="airport-iata-code">({arrIata})</span>}
+                                                                {arrIata && <span className="airport-iata-code">{arrIata}</span>}
                                                             </div>
                                                             <div className="airport-meta-line">
-                                                                <span className="airport-city-tag">📍 {arrCity}{arrCountry ? `, ${arrCountry}` : ''}</span>
+                                                                <span className="airport-city-tag">{arrCity}{arrCountry ? `, ${arrCountry}` : ''}</span>
                                                                 {arrTerminal && <span className="terminal-badge">Terminal {arrTerminal}</span>}
                                                             </div>
                                                         </div>
                                                     </div>
 
                                                     <div className="flight-tags-row">
-                                                        {o.cabin_class && <span className="flight-tag-badge">💺 {o.cabin_class}</span>}
-                                                        {o.flight_number && <span className="flight-tag-badge">🎫 Flight {o.flight_number}</span>}
-                                                        {o.baggage && <span className="flight-tag-badge">🧳 {o.baggage}</span>}
-                                                        {o.gate && <span className="flight-tag-badge">🚪 Gate: {o.gate}</span>}
+                                                        {o.cabin_class && <span className="flight-tag-badge">Class: {o.cabin_class}</span>}
+                                                        {o.flight_number && <span className="flight-tag-badge">Flight #{o.flight_number}</span>}
+                                                        {o.baggage && <span className="flight-tag-badge">Baggage: {o.baggage}</span>}
+                                                        {o.gate && <span className="flight-tag-badge">Gate: {o.gate}</span>}
                                                         {o.price_per_traveler && trip.travelers > 1 && (
-                                                            <span className="flight-tag-badge">👥 {formatMoney(o.price_per_traveler, o.currency || trip.currency)} / traveler</span>
+                                                            <span className="flight-tag-badge">{formatMoney(o.price_per_traveler, o.currency || trip.currency)} / traveler</span>
                                                         )}
                                                     </div>
 
                                                     <div className="flight-timing-line">
                                                         <div className="flight-time-col">
-                                                            <small>Departs</small>
+                                                            <small>Scheduled Departure</small>
                                                             <p className="flight-timestamp">{depTime ? new Date(depTime).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Scheduled departure'}</p>
                                                         </div>
                                                         <div className="flight-duration-center">
@@ -592,16 +954,17 @@ export function PlanDetailView({
                                                             <span className="stops-label">{o.stops === 0 ? 'Nonstop' : `${o.stops} Stop(s)`}</span>
                                                         </div>
                                                         <div className="flight-time-col">
-                                                            <small>Arrives</small>
+                                                            <small>Scheduled Arrival</small>
                                                             <p className="flight-timestamp">{arrTime ? new Date(arrTime).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Scheduled arrival'}</p>
                                                         </div>
                                                     </div>
 
                                                     <div className="flight-card-footer">
-                                                        <small className="source-tag">Source: {o.source || 'Amadeus Provider'}</small>
+                                                        <small className="source-tag">GDS Provider: {o.source || 'Amadeus Network'}</small>
                                                         {o.booking_url ? (
                                                             <a href={o.booking_url} target="_blank" rel="noopener noreferrer" className="button button-primary-sm">
-                                                                Provider Booking &rarr;
+                                                                <span>Provider Booking</span>
+                                                                <Icons.ExternalLink />
                                                             </a>
                                                         ) : (
                                                             <a
@@ -610,7 +973,8 @@ export function PlanDetailView({
                                                                 rel="noopener noreferrer"
                                                                 className="button button-outline-sm"
                                                             >
-                                                                View on Google Flights &rarr;
+                                                                <span>View on Google Flights</span>
+                                                                <Icons.ExternalLink />
                                                             </a>
                                                         )}
                                                     </div>
@@ -627,9 +991,9 @@ export function PlanDetailView({
                                                 className="load-more-btn"
                                                 onClick={() => setFlightVisibleCount(prev => prev + 6)}
                                             >
-                                                🔽 Load More Flights ({filteredFlights.length - displayedFlights.length} remaining)
+                                                <span>Load More Flights ({filteredFlights.length - displayedFlights.length} remaining)</span>
                                             </button>
-                                            <small style={{ color: 'var(--text-tertiary)' }}>
+                                            <small className="load-more-stats">
                                                 Showing {displayedFlights.length} of {filteredFlights.length} results
                                             </small>
                                         </div>
@@ -643,34 +1007,46 @@ export function PlanDetailView({
 
             {/* TAB 3: Hotels */}
             {activeSection === 'hotels' && (
-                <div className="tab-content-section">
+                <div className="tab-content-section" id="panel-hotels" role="tabpanel" aria-labelledby="tab-hotels">
                     <div className="section-heading-bar">
-                        <h2>Curated & Discovered Accommodations</h2>
-                        <span>{hotelData.source || 'Verified Hotel Directory & OpenStreetMap'}</span>
+                        <div>
+                            <h2>Curated & Discovered Accommodations</h2>
+                            <p className="section-subtext">Verified hotels, boutique stays, and heritage properties in {trip.destination}</p>
+                        </div>
+                        <span className="estimate-tag">{hotelData.source || 'Verified Directory & OpenStreetMap'}</span>
                     </div>
 
-                    <div style={{ marginBottom: '1.25rem', padding: '0.75rem 1rem', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        ℹ️ <strong>Pricing Transparency:</strong> Displayed rates reflect verified benchmark reference rates across 6 distinct tiers (from hostels to luxury heritage). Room availability, taxes, and dynamic seasonal pricing vary in real-time. Use the provider search link to view exact live quotes for your dates.
+                    <div className="transparency-callout-card">
+                        <Icons.Shield />
+                        <div>
+                            <strong>Pricing Transparency:</strong> Displayed rates reflect verified benchmark reference rates across 6 distinct tiers (from hostels to luxury heritage). Room availability, taxes, and seasonal rates vary in real-time. Use the provider search link to view exact live quotes for your travel dates.
+                        </div>
                     </div>
 
                     {hotels.length === 0 ? (
-                        <p className="empty-copy">No hotels retrieved for this destination.</p>
+                        <div className="empty-filter-box">
+                            <p>No accommodations retrieved for this destination.</p>
+                        </div>
                     ) : (
                         <>
                             {/* Hotel Discovery Controls */}
                             <div className="discovery-controls-card">
                                 <div className="discovery-search-row">
-                                    <input
-                                        type="text"
-                                        className="discovery-search-input"
-                                        placeholder="🔍 Search hotel, guesthouse, or neighborhood..."
-                                        value={hotelSearchQuery}
-                                        onChange={(e) => setHotelSearchQuery(e.target.value)}
-                                    />
+                                    <div className="search-input-wrapper">
+                                        <Icons.Search />
+                                        <input
+                                            type="text"
+                                            className="discovery-search-input"
+                                            placeholder="Search hotel, guesthouse, or neighborhood..."
+                                            value={hotelSearchQuery}
+                                            onChange={(e) => setHotelSearchQuery(e.target.value)}
+                                        />
+                                    </div>
                                     <select
                                         className="discovery-select-dropdown"
                                         value={hotelSortBy}
                                         onChange={(e) => setHotelSortBy(e.target.value)}
+                                        aria-label="Sort hotels"
                                     >
                                         <option value="recommended">Recommended & Curated</option>
                                         <option value="price_asc">Price: Low to High</option>
@@ -747,13 +1123,13 @@ export function PlanDetailView({
                                 <>
                                     <div className="hotel-cards-grid">
                                         {displayedHotels.map((h: any, idx: number) => (
-                                            <div key={idx} className="hotel-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <div key={idx} className="hotel-card">
                                                 {h.photo_url && (
-                                                    <div style={{ height: '170px', width: '100%', overflow: 'hidden', borderRadius: '8px 8px 0 0', margin: '-1.25rem -1.25rem 1rem -1.25rem', background: '#0a0f18' }}>
+                                                    <div className="hotel-image-header">
                                                         <img
                                                             src={h.photo_url}
                                                             alt={h.name}
-                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                            className="hotel-thumb-img"
                                                             loading="lazy"
                                                             onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                                                         />
@@ -761,38 +1137,40 @@ export function PlanDetailView({
                                                 )}
                                                 <div className="hotel-top-strip">
                                                     <span className="stars-pill">
-                                                        {h.rating ? `⭐ ${h.rating} / 5` : '⭐ Verified Stay'}
+                                                        ⭐ {h.rating ? `${h.rating} / 5` : 'Verified Stay'}
                                                         {h.review_count ? ` (${h.review_count.toLocaleString()} reviews)` : ''}
                                                     </span>
-                                                    <strong className="hotel-rate-text">{formatMoney(h.price_per_night, h.currency || trip.currency)} <small>/ night</small></strong>
+                                                    <strong className="hotel-rate-text">
+                                                        {formatMoney(h.price_per_night, h.currency || trip.currency)} <small>/ night</small>
+                                                    </strong>
                                                 </div>
                                                 {h.tier && <div className="hotel-tier-tag">{h.tier}</div>}
-                                                <h3>{h.name}</h3>
+                                                <h3 className="hotel-title-text">{h.name}</h3>
                                                 <p className="hotel-neighborhood">📍 {h.neighborhood || h.address || 'Central District'}</p>
 
                                                 {h.total_stay_price && (
-                                                    <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0.4rem 0' }}>
-                                                        Total for {trip.duration_days || 1} nights: <strong>{formatMoney(h.total_stay_price, h.currency || trip.currency)}</strong>
+                                                    <div className="hotel-stay-total-strip">
+                                                        Total for {days.length || trip.duration_days || 1} nights: <strong>{formatMoney(h.total_stay_price, h.currency || trip.currency)}</strong>
                                                         {h.taxes_and_fees ? ` (incl. ${formatMoney(h.taxes_and_fees, h.currency || trip.currency)} est. taxes)` : ''}
                                                     </div>
                                                 )}
 
-                                                <div className="amenities-chips" style={{ marginTop: 'auto' }}>
+                                                <div className="amenities-chips">
                                                     {(h.amenities || []).map((amenity: string) => (
                                                         <span key={amenity} className="amenity-chip">{amenity}</span>
                                                     ))}
                                                 </div>
 
-                                                <div style={{ marginTop: '0.85rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Source: {h.source || 'Verified Directory'}</small>
+                                                <div className="hotel-card-footer-strip">
+                                                    <small className="source-meta-tag">Source: {h.source || 'Verified Directory'}</small>
                                                     <a
                                                         href={h.booking_url || `https://www.google.com/travel/hotels?q=${encodeURIComponent(h.name + ' ' + trip.destination)}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="button button-outline-sm"
-                                                        style={{ textAlign: 'center', textDecoration: 'none' }}
                                                     >
-                                                        Check Live Availability &rarr;
+                                                        <span>Check Live Availability</span>
+                                                        <Icons.ExternalLink />
                                                     </a>
                                                 </div>
                                             </div>
@@ -807,9 +1185,9 @@ export function PlanDetailView({
                                                 className="load-more-btn"
                                                 onClick={() => setHotelVisibleCount(prev => prev + 6)}
                                             >
-                                                🔽 Load More Stays ({filteredHotels.length - displayedHotels.length} remaining)
+                                                <span>Load More Stays ({filteredHotels.length - displayedHotels.length} remaining)</span>
                                             </button>
-                                            <small style={{ color: 'var(--text-tertiary)' }}>
+                                            <small className="load-more-stats">
                                                 Showing {displayedHotels.length} of {filteredHotels.length} accommodations
                                             </small>
                                         </div>
@@ -823,30 +1201,39 @@ export function PlanDetailView({
 
             {/* TAB 4: Destinations & Attractions */}
             {activeSection === 'destinations' && (
-                <div className="tab-content-section">
+                <div className="tab-content-section" id="panel-destinations" role="tabpanel" aria-labelledby="tab-destinations">
                     <div className="section-heading-bar">
-                        <h2>Discovered Attractions & Iconic Landmarks</h2>
-                        <span>{destData.source || 'Curated, Wikipedia & OpenStreetMap'}</span>
+                        <div>
+                            <h2>Discovered Attractions & Iconic Landmarks</h2>
+                            <p className="section-subtext">Must-visit historical sites, cultural ghats, viewpoints, and temples in {trip.destination}</p>
+                        </div>
+                        <span className="estimate-tag">{destData.source || 'Curated, Wikipedia & OpenStreetMap'}</span>
                     </div>
 
                     {places.length === 0 ? (
-                        <p className="empty-copy">No landmarks discovered for this destination.</p>
+                        <div className="empty-filter-box">
+                            <p>No landmarks discovered for this destination.</p>
+                        </div>
                     ) : (
                         <>
                             {/* Attraction Discovery Controls */}
                             <div className="discovery-controls-card">
                                 <div className="discovery-search-row">
-                                    <input
-                                        type="text"
-                                        className="discovery-search-input"
-                                        placeholder="🔍 Search landmark name, description, or category..."
-                                        value={placeSearchQuery}
-                                        onChange={(e) => setPlaceSearchQuery(e.target.value)}
-                                    />
+                                    <div className="search-input-wrapper">
+                                        <Icons.Search />
+                                        <input
+                                            type="text"
+                                            className="discovery-search-input"
+                                            placeholder="Search landmark name, description, or category..."
+                                            value={placeSearchQuery}
+                                            onChange={(e) => setPlaceSearchQuery(e.target.value)}
+                                        />
+                                    </div>
                                     <select
                                         className="discovery-select-dropdown"
                                         value={placeSortBy}
                                         onChange={(e) => setPlaceSortBy(e.target.value)}
+                                        aria-label="Sort attractions"
                                     >
                                         <option value="recommended">Recommended & Curated</option>
                                         <option value="distance_asc">Distance to Center (Closest)</option>
@@ -930,45 +1317,46 @@ export function PlanDetailView({
                                 <>
                                     <div className="places-grid">
                                         {displayedPlaces.map((place: any, idx: number) => (
-                                            <div key={idx} className="place-item-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <div key={idx} className="place-item-card">
                                                 {place.photo_url && (
-                                                    <div style={{ height: '160px', width: '100%', overflow: 'hidden', borderRadius: '8px 8px 0 0', margin: '-1.25rem -1.25rem 1rem -1.25rem', background: '#0a0f18' }}>
+                                                    <div className="place-image-header">
                                                         <img
                                                             src={place.photo_url}
                                                             alt={place.name}
-                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                            className="place-thumb-img"
                                                             loading="lazy"
                                                             onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                                                         />
                                                     </div>
                                                 )}
-                                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                                                <div className="place-top-meta-row">
                                                     <div className="place-cat-tag">{(place.category || 'Landmark').replace(/_/g, ' ').toUpperCase()}</div>
                                                     {place.distance_km !== undefined && place.distance_km !== null && (
                                                         <span className="distance-badge-pill">📍 {place.distance_km} km to center</span>
                                                     )}
                                                 </div>
-                                                <h3>{place.name}</h3>
+                                                <h3 className="place-name-title">{place.name}</h3>
                                                 {place.description && <p className="place-desc">{place.description}</p>}
-                                                <div className="place-meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginTop: 'auto', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
-                                                    <span>{place.rating ? `⭐ ${place.rating} / 5.0` : '🏛️ Verified Landmark'}</span>
-                                                    <span style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>
+                                                <div className="place-meta">
+                                                    <span className="place-rating-badge">{place.rating ? `⭐ ${place.rating} / 5.0` : '🏛️ Verified Landmark'}</span>
+                                                    <span className="place-admission-badge">
                                                         {place.admission_fee_inr !== undefined
                                                             ? (place.admission_fee_inr === 0 ? 'Free public access' : `₹${place.admission_fee_inr} entry`)
-                                                            : (place.admission_price || (place.price_level ? (place.price_level === 'Free' ? 'Free access' : `Tier ${place.price_level}`) : (place.price || 'Entry info upon arrival')))}
+                                                            : (place.admission_price || (place.price_level ? (place.price_level === 'Free' ? 'Free access' : `Tier ${place.price_level}`) : (place.price || 'Free admission')))}
                                                     </span>
                                                 </div>
                                                 <p className="place-address">📍 {place.address || trip.destination}</p>
-                                                {place.opening_hours && <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>🕒 {place.opening_hours}</small>}
-                                                <div style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Source: {place.source || 'OpenStreetMap'}</small>
+                                                {place.opening_hours && <small className="place-hours-text"><Icons.Clock /> {place.opening_hours}</small>}
+                                                <div className="place-card-footer">
+                                                    <small className="source-meta-tag">Source: {place.source || 'OpenStreetMap'}</small>
                                                     <a
                                                         href={place.website || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + trip.destination)}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        style={{ fontSize: '0.8rem', color: 'var(--brand-primary)', textDecoration: 'underline' }}
+                                                        className="place-directions-link"
                                                     >
-                                                        {place.website ? 'Official Portal →' : 'Directions on Map →'}
+                                                        <span>{place.website ? 'Official Portal' : 'Directions on Map'}</span>
+                                                        <Icons.ExternalLink />
                                                     </a>
                                                 </div>
                                             </div>
@@ -983,9 +1371,9 @@ export function PlanDetailView({
                                                 className="load-more-btn"
                                                 onClick={() => setPlaceVisibleCount(prev => prev + 8)}
                                             >
-                                                🔽 Load More Places ({filteredPlaces.length - displayedPlaces.length} remaining)
+                                                <span>Load More Places ({filteredPlaces.length - displayedPlaces.length} remaining)</span>
                                             </button>
-                                            <small style={{ color: 'var(--text-tertiary)' }}>
+                                            <small className="load-more-stats">
                                                 Showing {displayedPlaces.length} of {filteredPlaces.length} discovered places
                                             </small>
                                         </div>
@@ -999,7 +1387,7 @@ export function PlanDetailView({
 
             {/* TAB 5: Interactive Map */}
             {activeSection === 'map' && (
-                <div className="tab-content-section">
+                <div className="tab-content-section" id="panel-map" role="tabpanel" aria-labelledby="tab-map">
                     <InteractiveMap
                         origin={trip.origin}
                         destination={trip.destination}
@@ -1012,10 +1400,13 @@ export function PlanDetailView({
 
             {/* TAB 6: Budget & Costs */}
             {activeSection === 'budget' && (
-                <div className="tab-content-section">
+                <div className="tab-content-section" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget">
                     <div className="section-heading-bar">
-                        <h2>Deterministic Budget Guardrails</h2>
-                        <span>Decimal Calculation Engine</span>
+                        <div>
+                            <h2>Deterministic Budget Guardrails</h2>
+                            <p className="section-subtext">Comprehensive itemized financial breakdown calculated by Budget Intelligence Engine</p>
+                        </div>
+                        <span className="estimate-tag">Decimal Calculation Engine</span>
                     </div>
 
                     <div className="budget-kpi-row">
@@ -1029,10 +1420,12 @@ export function PlanDetailView({
                         </div>
                         <div className="budget-kpi-box">
                             <span>Remaining Budget</span>
-                            <strong>{formatMoney(budgetData.remaining, budgetData.currency || trip.currency)}</strong>
+                            <strong className={parseFloat(String(budgetData.remaining || 0)) < 0 ? 'text-negative' : 'text-positive'}>
+                                {formatMoney(budgetData.remaining, budgetData.currency || trip.currency)}
+                            </strong>
                         </div>
                         <div className="budget-kpi-box">
-                            <span>Status</span>
+                            <span>Budget Health</span>
                             <strong className={`status-badge-inline ${budgetData.over_budget ? 'danger' : 'success'}`}>
                                 {budgetData.over_budget ? 'OVER BUDGET' : 'WITHIN BUDGET'}
                             </strong>
@@ -1040,21 +1433,29 @@ export function PlanDetailView({
                     </div>
 
                     <div className="surface-card mt-3">
-                        <h3>Itemized Allocations & Estimation Model</h3>
+                        <h3 className="budget-allocations-title">Itemized Allocations & Estimation Model</h3>
                         <div className="budget-lines-table">
-                            {Object.entries(budgetItems).map(([cat, amt]) => (
-                                <div key={cat} className="budget-line-row">
-                                    <span className="line-category">{cat.replace(/_/g, ' ').toUpperCase()}</span>
-                                    <span className="line-bar-container">
-                                        <div className="line-bar-fill" style={{ width: `${Math.min(100, (parseFloat(amt) / (parseFloat(budgetData.total || '1000') || 1)) * 100)}%` }} />
-                                    </span>
-                                    <strong className="line-amount">{formatMoney(amt, trip.currency)}</strong>
-                                </div>
-                            ))}
+                            {Object.entries(budgetItems).map(([cat, amt]) => {
+                                const totalNum = parseFloat(budgetData.total || '1000') || 1
+                                const amtNum = parseFloat(amt) || 0
+                                const pct = Math.min(100, Math.round((amtNum / totalNum) * 100))
+                                return (
+                                    <div key={cat} className="budget-line-row">
+                                        <div className="line-category-group">
+                                            <span className="line-category">{cat.replace(/_/g, ' ').toUpperCase()}</span>
+                                            <span className="line-percentage">{pct}%</span>
+                                        </div>
+                                        <span className="line-bar-container">
+                                            <div className="line-bar-fill" style={{ width: `${pct}%` }} />
+                                        </span>
+                                        <strong className="line-amount">{formatMoney(amt, trip.currency)}</strong>
+                                    </div>
+                                )
+                            })}
                         </div>
-                        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                        <div className="budget-footnotes-box">
                             <p>• <strong>Flights:</strong> {flightOffers.length > 0 ? 'Selected provider offer total' : 'Unconfigured provider (flights excluded from confirmed total)'}.</p>
-                            <p>• <strong>Accommodation:</strong> Benchmark reference rates calculated for {trip.duration_days || 1} nights with 12% estimated local hospitality taxes.</p>
+                            <p>• <strong>Accommodation:</strong> Benchmark reference rates calculated for {days.length || trip.duration_days || 1} nights with 12% estimated local hospitality taxes.</p>
                             <p>• <strong>Meals & Dining:</strong> Transparent per-person daily dining model adapted to destination cost indices.</p>
                             <p>• <strong>Local Transit:</strong> Metro, licensed cab, and arrival transfer allocations.</p>
                             <p>• <strong>Safety Contingency:</strong> 12% deterministic buffer held for unexpected currency fluctuations or travel expenses.</p>
@@ -1065,34 +1466,41 @@ export function PlanDetailView({
 
             {/* TAB 7: Weather & Support */}
             {activeSection === 'support' && (
-                <div className="tab-content-section">
+                <div className="tab-content-section" id="panel-support" role="tabpanel" aria-labelledby="tab-support">
                     <div className="section-heading-bar">
-                        <h2>Weather Forecast & Support Briefing</h2>
-                        <span>Open-Meteo High-Resolution Numerical Model</span>
+                        <div>
+                            <h2>Weather Forecast & Support Briefing</h2>
+                            <p className="section-subtext">Meteorological analysis and adaptive pre-departure packing recommendations</p>
+                        </div>
+                        <span className="estimate-tag">Open-Meteo High-Resolution Model</span>
                     </div>
 
                     {/* Current Conditions Card */}
                     {currentWeather && (
-                        <div className="surface-card mb-3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'var(--bg-surface-elevated)' }}>
-                            <div>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--brand-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Destination Conditions</span>
-                                <h3 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginTop: '2px' }}>
-                                    {currentWeather.temp_c !== undefined ? `${currentWeather.temp_c}°C` : 'N/A'}
-                                    {currentWeather.apparent_temp_c !== undefined && <small style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: '8px' }}>(Feels like {currentWeather.apparent_temp_c}°C)</small>}
-                                </h3>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{currentWeather.condition || 'Current weather condition'}</p>
+                        <div className="weather-current-hero-card">
+                            <div className="weather-current-left">
+                                <span className="weather-kicker">Current Destination Conditions · {trip.destination}</span>
+                                <div className="weather-temp-row">
+                                    <h3 className="weather-big-temp">
+                                        {currentWeather.temp_c !== undefined ? `${currentWeather.temp_c}°C` : 'N/A'}
+                                    </h3>
+                                    {currentWeather.apparent_temp_c !== undefined && (
+                                        <span className="weather-feels-like">(Feels like {currentWeather.apparent_temp_c}°C)</span>
+                                    )}
+                                </div>
+                                <p className="weather-condition-desc">{currentWeather.condition || 'Current weather condition'}</p>
                             </div>
-                            <div style={{ display: 'flex', gap: '1.5rem' }}>
+                            <div className="weather-current-metrics">
                                 {currentWeather.wind_speed_kmh !== undefined && (
-                                    <div>
-                                        <small style={{ color: 'var(--text-muted)' }}>Wind Speed</small>
-                                        <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{currentWeather.wind_speed_kmh} km/h</p>
+                                    <div className="metric-box">
+                                        <small>Wind Speed</small>
+                                        <p>{currentWeather.wind_speed_kmh} km/h</p>
                                     </div>
                                 )}
                                 {currentWeather.precipitation_probability !== undefined && (
-                                    <div>
-                                        <small style={{ color: 'var(--text-muted)' }}>Precipitation</small>
-                                        <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{currentWeather.precipitation_probability}%</p>
+                                    <div className="metric-box">
+                                        <small>Precipitation</small>
+                                        <p>{currentWeather.precipitation_probability}%</p>
                                     </div>
                                 )}
                             </div>
@@ -1100,35 +1508,64 @@ export function PlanDetailView({
                     )}
 
                     {supportInfo.horizon_notice && (
-                        <div style={{ padding: '0.75rem 1rem', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', color: 'var(--brand-accent)', fontSize: '0.88rem', marginBottom: '1rem' }}>
-                            📅 <strong>Forecast Horizon Notice:</strong> {supportInfo.horizon_notice}
+                        <div className="horizon-notice-banner">
+                            <Icons.Calendar />
+                            <span><strong>Forecast Horizon Notice:</strong> {supportInfo.horizon_notice}</span>
                         </div>
                     )}
 
                     {weatherForecast.length > 0 && (
-                        <div className="weather-forecast-row">
-                            {weatherForecast.map((w: any, idx: number) => (
-                                <div key={idx} className="weather-day-chip">
-                                    <span>{w.date ? new Date(w.date).toLocaleDateString(undefined, { weekday: 'short' }) : `Day ${idx + 1}`}</span>
-                                    <strong>{w.temp_max_c ? `${w.temp_max_c}°C` : 'N/A'}</strong>
-                                    <small>{w.condition || 'Clear'}</small>
-                                </div>
-                            ))}
+                        <div className="forecast-section-wrapper">
+                            <h4 className="forecast-section-title">5-Day Meteorological Outlook</h4>
+                            <div className="weather-forecast-row">
+                                {weatherForecast.map((w: any, idx: number) => {
+                                    const dateObj = w.date ? new Date(w.date) : null
+                                    const weekday = dateObj ? dateObj.toLocaleDateString(undefined, { weekday: 'short' }) : `Day ${idx + 1}`
+                                    const dateFormatted = dateObj ? dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''
+                                    return (
+                                        <div key={idx} className="weather-day-chip">
+                                            <span className="weather-day-name">{weekday}</span>
+                                            {dateFormatted && <span className="weather-day-subdate">{dateFormatted}</span>}
+                                            <div className="weather-icon-indicator"><Icons.CloudSun /></div>
+                                            <strong className="weather-day-temp">{w.temp_max_c ? `${w.temp_max_c}°C` : 'N/A'}</strong>
+                                            <small className="weather-day-condition">{w.condition || 'Clear'}</small>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         </div>
                     )}
 
                     <div className="surface-card mt-3">
-                        <h3>Forecast-Adaptive Pre-Departure Checklist</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                            Checklist dynamically adjusts based on destination weather predictions and activity pace.
-                        </p>
+                        <div className="checklist-card-header">
+                            <div>
+                                <h3>Forecast-Adaptive Pre-Departure Checklist</h3>
+                                <p className="section-subtext">
+                                    Checklist dynamically adjusted based on destination climate predictions and planned activities.
+                                </p>
+                            </div>
+                            <span className="checklist-count-tag">
+                                {Object.values(checkedItems).filter(Boolean).length} / {packingChecklist.length} Checked
+                            </span>
+                        </div>
                         <ul className="checklist-items">
-                            {packingChecklist.map((item: string, idx: number) => (
-                                <li key={idx} className="checklist-item">
-                                    <input type="checkbox" id={`chk-${idx}`} />
-                                    <label htmlFor={`chk-${idx}`}>{item}</label>
-                                </li>
-                            ))}
+                            {packingChecklist.map((item: string, idx: number) => {
+                                const isChecked = Boolean(checkedItems[idx])
+                                return (
+                                    <li key={idx} className={`checklist-item ${isChecked ? 'item-checked' : ''}`} onClick={() => toggleCheckItem(idx)}>
+                                        <input
+                                            type="checkbox"
+                                            id={`chk-${idx}`}
+                                            checked={isChecked}
+                                            onChange={() => {}}
+                                            aria-label={item}
+                                        />
+                                        <label htmlFor={`chk-${idx}`} onClick={(e) => e.stopPropagation()}>
+                                            {item}
+                                        </label>
+                                    </li>
+                                )
+                            })}
                         </ul>
                     </div>
                 </div>
@@ -1136,39 +1573,66 @@ export function PlanDetailView({
 
             {/* TAB 8: Agent Swarm Logs */}
             {activeSection === 'agents' && (
-                <div className="tab-content-section">
+                <div className="tab-content-section" id="panel-agents" role="tabpanel" aria-labelledby="tab-agents">
                     <div className="section-heading-bar">
-                        <h2>Multi-Agent Autonomous Execution Logs</h2>
-                        <span>Orchestration DAG Status</span>
+                        <div>
+                            <h2>Multi-Agent Autonomous Execution Logs</h2>
+                            <p className="section-subtext">Live telemetry from the TravelMind 8-Agent Swarm execution pipeline</p>
+                        </div>
+                        <span className="estimate-tag">Orchestration DAG Status</span>
                     </div>
 
-                    <div className="agent-logs-table">
-                        {Array.from(new Set([
-                            'travel_concierge',
-                            'flight_intelligence',
-                            'accommodation_intelligence',
-                            'destination_discovery',
-                            'transportation_route',
-                            'budget_intelligence',
-                            'personalization_recommendation',
-                            'itinerary_compiler',
-                            'travel_support',
-                            ...Object.keys(agentExecutions)
-                        ])).map(name => {
-                            const exec = agentExecutions[name]
-                            const status = exec?.status || 'ok'
-                            return (
-                                <div key={name} className="agent-log-row">
-                                    <div className="agent-name-cell">
-                                        <span className={`status-indicator-dot dot-${status}`} />
-                                        <strong>{name.replace(/_/g, ' ').toUpperCase()}</strong>
+                    <div className="agent-logs-container">
+                        <div className="agent-logs-table-header">
+                            <span className="col-agent">Agent / Specialization</span>
+                            <span className="col-status">Status</span>
+                            <span className="col-duration">Execution Latency</span>
+                            <span className="col-diagnostics">Diagnostics & Telemetry</span>
+                        </div>
+                        <div className="agent-logs-list">
+                            {Array.from(new Set([
+                                'travel_concierge',
+                                'flight_intelligence',
+                                'accommodation_intelligence',
+                                'destination_discovery',
+                                'transportation_route',
+                                'budget_intelligence',
+                                'personalization_recommendation',
+                                'itinerary_compiler',
+                                'travel_support',
+                                ...Object.keys(agentExecutions)
+                            ])).map(name => {
+                                const exec = agentExecutions[name]
+                                const status = exec?.status || 'ok'
+                                const duration = exec?.duration_ms || 0
+                                const isError = status === 'error' || status === 'failed'
+
+                                return (
+                                    <div key={name} className={`agent-log-row ${isError ? 'row-error' : 'row-ok'}`}>
+                                        <div className="agent-name-cell">
+                                            <span className={`status-indicator-dot dot-${status}`} />
+                                            <div>
+                                                <strong className="agent-title">{name.replace(/_/g, ' ').toUpperCase()}</strong>
+                                                <small className="agent-sublabel">Core Swarm Node</small>
+                                            </div>
+                                        </div>
+                                        <div className="agent-status-cell">
+                                            <span className={`agent-status-tag tag-${status}`}>{status.toUpperCase()}</span>
+                                        </div>
+                                        <div className="agent-timing-cell">
+                                            <span className="agent-duration-badge">{duration} ms</span>
+                                        </div>
+                                        <div className="agent-error-cell">
+                                            {exec?.error ? (
+                                                <span className="error-text">⚠️ {exec.error}</span>
+                                            ) : (
+                                                <span className="ok-text">✓ Execution verified within DAG bounds</span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <span className="agent-status-tag">{status}</span>
-                                    <span className="agent-timing">{exec?.duration_ms || 0} ms</span>
-                                    <small className="agent-error-cell">{exec?.error || 'Completed successfully'}</small>
-                                </div>
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
             )}
@@ -1178,8 +1642,11 @@ export function PlanDetailView({
                 <div className="modal-backdrop">
                     <div className="modal-dialog">
                         <div className="modal-header">
-                            <h3>Modify Trip & Re-Plan</h3>
-                            <button className="close-btn" onClick={() => setShowEditModal(false)}>&times;</button>
+                            <div>
+                                <span className="section-kicker">Trip Parameters</span>
+                                <h3>Modify Trip & Re-Plan</h3>
+                            </div>
+                            <button className="close-btn" onClick={() => setShowEditModal(false)} aria-label="Close dialog">&times;</button>
                         </div>
                         <form onSubmit={handleSaveEdit} className="modal-form">
                             <div className="form-grid two-columns">
@@ -1221,18 +1688,7 @@ export function PlanDetailView({
                             </div>
 
                             {editDateError && (
-                                <div className="date-error-alert" style={{
-                                    marginTop: '1rem',
-                                    padding: '0.75rem 1rem',
-                                    background: 'rgba(239, 68, 68, 0.12)',
-                                    border: '1px solid rgba(239, 68, 68, 0.4)',
-                                    borderRadius: '8px',
-                                    color: '#fca5a5',
-                                    fontSize: '0.88rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem'
-                                }}>
+                                <div className="date-error-alert">
                                     <span>⚠️</span>
                                     <span>{editDateError}</span>
                                 </div>

@@ -410,33 +410,63 @@ input:focus, select:focus, textarea:focus {
    ========================================================================== */
 
 .global-banner {
-  padding: 0.75rem 2rem;
+  max-width: 1280px;
+  width: calc(100% - 2rem);
+  margin: 0.85rem auto 0;
+  padding: 0.85rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 550;
   cursor: pointer;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-fast);
+  animation: bannerSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bannerSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .success-banner {
-  background: rgba(16, 185, 129, 0.15);
-  border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
   color: #34d399;
+}
+.success-banner:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.5);
 }
 
 .error-banner {
-  background: rgba(239, 68, 68, 0.15);
-  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
   color: #f87171;
+}
+.error-banner:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 .dismiss-btn {
   background: none;
   border: none;
   color: inherit;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  opacity: 0.8;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+}
+.dismiss-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ==========================================================================
@@ -992,103 +1022,423 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ==========================================================================
-   Plan Detail View (8 Sub-tabs)
+   Plan Detail View (Modern SaaS Itinerary Dashboard & 8 Sub-tabs)
    ========================================================================== */
 
 .plan-detail-container {
-  max-width: 1280px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 1.5rem 2rem 4rem;
+  padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 5rem;
 }
 
+/* --- Top Bar & Navigation Action Controls --- */
 .plan-top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .back-link-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.back-link-btn:hover { color: var(--brand-primary); }
-
-.plan-actions-group {
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 0.5rem;
-}
-
-.plan-header-banner {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(129, 140, 248, 0.05));
-  border: 1px solid var(--border-hover);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2rem;
-}
-
-.banner-dates {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  margin: 0.5rem 0 1rem;
-}
-
-.banner-badge-box {
-  background: var(--bg-surface-elevated);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0.6rem 1rem;
-  text-align: right;
-}
-
-.source-label { font-size: 0.7rem; color: var(--text-muted); display: block; text-transform: uppercase; }
-.source-value { font-size: 0.85rem; color: var(--brand-primary); }
-
-.plan-subtabs-row {
-  display: flex;
-  gap: 0.5rem;
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 2rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-}
-
-.subtab-btn {
-  background: none;
-  border: none;
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+  padding: 0.55rem 1rem;
   border-radius: var(--radius-md);
   cursor: pointer;
-  white-space: nowrap;
   transition: all var(--transition-fast);
 }
 
-.subtab-btn:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-surface);
+.back-link-btn:hover {
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  background: var(--bg-surface-elevated);
+  transform: translateX(-2px);
 }
 
-.subtab-btn.active {
-  background-color: var(--brand-primary);
-  color: #000;
+.plan-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+/* --- Trip Summary Header Card --- */
+.plan-header-banner {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--bg-surface) 95%, var(--brand-primary) 5%), var(--bg-surface));
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+  gap: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.plan-header-banner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100%;
+  background: radial-gradient(circle at 100% 0%, rgba(56, 189, 248, 0.08), transparent 70%);
+  pointer-events: none;
+}
+
+.banner-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.banner-top-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+.status-pill.status-saved {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-dot-pulse {
+  width: 7px;
+  height: 7px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  animation: pulseGreen 2s infinite ease-in-out;
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.banner-id-tag {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: monospace;
+  background: var(--bg-surface-elevated);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.trip-destination-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  line-height: 1.15;
+}
+
+.route-city {
+  color: var(--text-primary);
+}
+
+.route-flow-arrow {
+  color: var(--brand-primary);
+  font-weight: 400;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.banner-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.meta-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.9rem;
+  transition: border-color var(--transition-fast);
+}
+
+.meta-card:hover {
+  border-color: var(--border-hover);
+}
+
+.meta-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--brand-primary);
+  flex-shrink: 0;
+}
+
+.meta-card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.meta-card-body small {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.meta-card-body strong {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.banner-summary-text {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.banner-source-card {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  position: relative;
+  align-self: center;
+}
+
+.source-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--brand-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.source-card-title {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 0.25rem;
+}
+
+.source-card-subtitle {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* --- Premium SaaS Navigation Tabs Bar --- */
+.plan-tabs-bar-container {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.plan-tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.plan-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0.6rem 1.15rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tab-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.85;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.plan-tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-subtle);
+}
+
+.plan-tab-btn:hover .tab-icon-wrapper {
+  transform: translateY(-1px);
+  opacity: 1;
+}
+
+.plan-tab-btn.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(129, 140, 248, 0.1));
+  color: var(--brand-primary);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.12);
+  font-weight: 700;
+}
+
+[data-theme="light"] .plan-tab-btn.active {
+  background: #ffffff;
+  color: var(--brand-primary);
+  border-color: rgba(2, 132, 199, 0.3);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.tab-count-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-fast);
+}
+
+.tab-count-badge.badge-active {
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--brand-primary);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+[data-theme="light"] .tab-count-badge.badge-active {
+  background: rgba(2, 132, 199, 0.12);
+  color: var(--brand-primary);
+}
+
+/* --- Section Headings & Common Card Styles --- */
+.tab-content-section {
+  animation: fadeIn 0.25s ease;
+}
+
+.section-heading-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.section-heading-bar h2 {
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.section-subtext {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.estimate-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--brand-primary);
+  white-space: nowrap;
+}
+
+/* --- TAB 1: Daily Schedule Styles --- */
+.itinerary-days-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .day-schedule-card {
-  background-color: var(--bg-surface);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
-  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast);
+}
+
+.day-schedule-card:hover {
+  border-color: var(--border-hover);
 }
 
 .day-header-strip {
@@ -1096,15 +1446,36 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   gap: 1rem;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.day-badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .day-badge {
-  background-color: var(--brand-primary);
-  color: #000;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  color: #07111d;
   font-weight: 800;
   font-size: 0.75rem;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: var(--radius-full);
+  letter-spacing: 0.05em;
+}
+
+.day-date-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.day-title-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .slots-grid {
@@ -1114,254 +1485,116 @@ input:focus, select:focus, textarea:focus {
 }
 
 .slot-box {
-  background-color: var(--bg-surface-elevated);
+  background: var(--bg-surface-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 1.25rem;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition-fast);
 }
 
-.slot-icon {
+.slot-box:hover {
+  border-color: var(--border-hover);
+}
+
+.slot-header-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.slot-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 750;
   letter-spacing: 0.05em;
-  color: var(--brand-primary);
-  display: block;
-  margin-bottom: 0.5rem;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+}
+
+.morning-badge {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.afternoon-badge {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.evening-badge {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.slot-time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .slot-box h4 {
-  font-size: 0.95rem;
-  margin-bottom: 0.4rem;
-}
-
-.slot-box small {
-  color: var(--text-muted);
-}
-
-/* Flights & Hotels cards */
-.offers-table-grid, .hotel-cards-grid, .places-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
-}
-
-.flight-offer-card, .hotel-card, .place-item-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-}
-
-.flight-carrier-line, .hotel-top-strip {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.flight-price-tag, .hotel-rate-text {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--brand-success);
-}
-
-/* Enhanced Verified Flight Route & Airport Styles */
-.flight-route-display-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 1rem 1.15rem;
-  margin-bottom: 0.85rem;
-  gap: 1rem;
-}
-
-.flight-endpoint {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.flight-endpoint.origin-endpoint {
-  text-align: left;
-}
-
-.flight-endpoint.destination-endpoint {
-  text-align: right;
-}
-
-.airport-name-line {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.destination-endpoint .airport-name-line {
-  justify-content: flex-end;
-}
-
-.airport-full-name {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.45;
   color: var(--text-primary);
-  line-height: 1.3;
-}
-
-.airport-iata-code {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: var(--brand-primary);
-  background: rgba(56, 189, 248, 0.12);
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  letter-spacing: 0.5px;
-}
-
-.airport-meta-line {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  flex-wrap: wrap;
-}
-
-.destination-endpoint .airport-meta-line {
-  justify-content: flex-end;
-}
-
-.terminal-badge {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 1px 7px;
-  border-radius: var(--radius-full);
-}
-
-.flight-route-connector {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 90px;
-}
-
-.route-arrow-symbol {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--brand-primary);
-  line-height: 1;
-}
-
-.flight-duration-chip {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.stops-chip {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
-}
-
-.flight-timing-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--bg-surface-elevated);
-  padding: 0.85rem;
-  border-radius: var(--radius-md);
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.flight-time-col small {
-  color: var(--text-tertiary);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.flight-timestamp {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-top: 0.2rem;
-}
-
-.flight-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.amenity-chip {
-  background-color: var(--bg-surface-elevated);
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  color: var(--text-secondary);
-}
-
-.hotel-tier-tag {
-  display: inline-block;
-  background: rgba(56, 189, 248, 0.15);
-  color: var(--brand-primary);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
   margin-bottom: 0.5rem;
+  flex: 1;
 }
 
-.flight-tags-row {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.75rem;
-}
-
-.flight-tag-badge {
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
+.slot-cost {
+  align-self: flex-start;
+  margin-top: 0.5rem;
   font-size: 0.75rem;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: var(--brand-success);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
 }
 
 .itinerary-tips-box {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 0.75rem;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
   border-top: 1px dashed var(--border-subtle);
 }
 
-@media (max-width: 768px) {
-  .itinerary-tips-box {
-    grid-template-columns: 1fr;
-  }
+.itinerary-tip-card {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  line-height: 1.5;
 }
 
-.itinerary-tip-card {
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--radius-md);
-  font-size: 0.825rem;
-  line-height: 1.4;
+.itinerary-tip-card .tip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.itinerary-tip-card p {
+  color: inherit;
+  opacity: 0.9;
 }
 
 .itinerary-tip-card.dining-tip {
@@ -1376,141 +1609,285 @@ input:focus, select:focus, textarea:focus {
   color: #93c5fd;
 }
 
-.slot-cost {
-  display: inline-block;
-  margin-top: 0.35rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--brand-success);
-}
-
-.place-desc {
-  font-size: 0.825rem;
-  color: var(--text-secondary);
-  margin: 0.4rem 0 0.6rem;
-  line-height: 1.4;
-}
-
-
-/* ==========================================================================
-   Interactive Map
-   ========================================================================== */
-
-.interactive-map-card {
-  background-color: var(--bg-surface);
+/* --- TAB 2: Flights Styles --- */
+.flight-unconfigured-hero-card {
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  box-shadow: var(--shadow-sm);
 }
 
-.map-toolbar {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-subtle);
+.flight-unconfigured-header {
   display: flex;
-  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.flight-provider-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.flight-provider-text h3 {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.flight-provider-text p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.inline-code {
+  font-family: monospace;
+  font-size: 0.85em;
+  background: var(--bg-surface-elevated);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  color: var(--brand-primary);
+}
+
+.integrity-guarantee-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.15rem;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius-md);
+  color: var(--brand-primary);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.unconfigured-actions-strip {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+  display: flex;
   align-items: center;
 }
 
-.map-route-indicator {
+.search-input-wrapper svg {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-input-wrapper .discovery-search-input {
+  width: 100%;
+  padding-left: 2.35rem;
+}
+
+.direct-provider-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--brand-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  font-size: 0.84rem;
+}
+
+.flight-offer-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition-fast);
+}
+
+.flight-offer-card:hover {
+  border-color: var(--border-hover);
+}
+
+.carrier-identity {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.route-pulse {
-  width: 8px;
-  height: 8px;
-  background-color: var(--brand-primary);
-  border-radius: 50%;
-  animation: pulse 2s infinite;
+.carrier-icon {
+  color: var(--brand-primary);
+  display: inline-flex;
 }
 
-@keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
-}
-
-.map-filters {
+/* --- TAB 3: Hotels & Stays Styles --- */
+.transparency-callout-card {
   display: flex;
-  gap: 0.4rem;
-}
-
-.filter-btn {
-  background: var(--bg-surface-elevated);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.15rem;
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-}
-.filter-btn.active {
-  background: var(--brand-primary);
-  color: #000;
-  font-weight: 700;
-}
-
-.svg-map-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.vector-map-svg {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.map-detail-popup {
-  position: absolute;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  background-color: rgba(15, 20, 30, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-hover);
   border-radius: var(--radius-md);
-  padding: 1.25rem;
-  width: 300px;
-  box-shadow: var(--shadow-lg);
-  animation: fadeIn 0.2s ease;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+.transparency-callout-card svg {
+  color: var(--brand-primary);
+  flex-shrink: 0;
 }
 
-.popup-header {
+.hotel-image-header {
+  height: 180px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  margin: -1.5rem -1.5rem 1rem -1.5rem;
+  background: var(--bg-surface-elevated);
+}
+
+.hotel-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.hotel-card:hover .hotel-thumb-img {
+  transform: scale(1.03);
+}
+
+.hotel-title-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.hotel-stay-total-strip {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.65rem;
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-sm);
+}
+
+.hotel-card-footer-strip {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.popup-type-tag {
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: var(--radius-full);
-}
-.type-destination { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-.type-attraction { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
-.type-hotel { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
-.type-dining { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-
-.close-popup-btn {
-  background: none;
-  border: none;
+.source-meta-tag {
   color: var(--text-muted);
-  font-size: 1.25rem;
-  cursor: pointer;
+  font-size: 0.74rem;
 }
 
-/* ==========================================================================
-   Budget & Costs
-   ========================================================================== */
+/* --- TAB 4: Attractions Styles --- */
+.place-image-header {
+  height: 170px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  margin: -1.5rem -1.5rem 1rem -1.5rem;
+  background: var(--bg-surface-elevated);
+}
 
+.place-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.place-item-card:hover .place-thumb-img {
+  transform: scale(1.03);
+}
+
+.place-top-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.place-name-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.35rem;
+}
+
+.place-rating-badge {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.place-admission-badge {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.place-hours-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin-top: 0.35rem;
+}
+
+.place-card-footer {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.place-directions-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand-primary);
+  text-decoration: underline;
+}
+
+/* --- TAB 6: Budget & Costs Styles --- */
 .budget-kpi-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1519,20 +1896,52 @@ input:focus, select:focus, textarea:focus {
 }
 
 .budget-kpi-box {
-  background-color: var(--bg-surface);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 1rem;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
-.budget-kpi-box span { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; display: block; }
-.budget-kpi-box strong { font-size: 1.3rem; }
 
-.status-badge-inline {
-  font-size: 0.85rem;
-  font-weight: 700;
+.budget-kpi-box span {
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
 }
-.status-badge-inline.success { color: var(--brand-success); }
-.status-badge-inline.danger { color: var(--brand-danger); }
+
+.budget-kpi-box strong {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.text-positive {
+  color: var(--brand-success) !important;
+}
+
+.text-negative {
+  color: var(--brand-danger) !important;
+}
+
+.budget-allocations-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1.25rem;
+}
+
+.budget-lines-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
 
 .budget-line-row {
   display: flex;
@@ -1540,11 +1949,426 @@ input:focus, select:focus, textarea:focus {
   justify-content: space-between;
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--border-subtle);
+  gap: 1rem;
 }
 
-.line-category { width: 140px; font-weight: 600; font-size: 0.85rem; }
-.line-bar-container { flex: 1; height: 8px; background: var(--bg-surface-elevated); border-radius: var(--radius-full); margin: 0 1.5rem; overflow: hidden; }
-.line-bar-fill { height: 100%; background: var(--brand-primary); }
+.line-category-group {
+  width: 170px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.line-category {
+  font-weight: 650;
+  font-size: 0.84rem;
+  color: var(--text-primary);
+}
+
+.line-percentage {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.line-bar-container {
+  flex: 1;
+  height: 9px;
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.line-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand-primary), var(--brand-secondary));
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease;
+}
+
+.line-amount {
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: var(--text-primary);
+  min-width: 90px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.budget-footnotes-box {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* --- TAB 7: Weather & Support Briefing Styles --- */
+.weather-current-hero-card {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--bg-surface) 94%, var(--brand-primary) 6%), var(--bg-surface));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+.weather-kicker {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--brand-primary);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.weather-temp-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.weather-big-temp {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.weather-feels-like {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.weather-condition-desc {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-top: 0.4rem;
+  font-weight: 550;
+}
+
+.weather-current-metrics {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.metric-box {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.15rem;
+  min-width: 110px;
+}
+
+.metric-box small {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+  display: block;
+}
+
+.metric-box p {
+  font-size: 1.15rem;
+  font-weight: 750;
+  color: var(--text-primary);
+  margin-top: 0.2rem;
+}
+
+.horizon-notice-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.15rem;
+  background: rgba(245, 158, 11, 0.09);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-md);
+  color: var(--brand-accent);
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+}
+
+.forecast-section-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+.forecast-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.85rem;
+}
+
+.weather-forecast-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.weather-day-chip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.weather-day-chip:hover {
+  border-color: var(--brand-primary);
+  transform: translateY(-2px);
+}
+
+.weather-day-name {
+  font-size: 0.88rem;
+  font-weight: 750;
+  color: var(--text-primary);
+}
+
+.weather-day-subdate {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.weather-icon-indicator {
+  color: var(--brand-accent);
+  display: flex;
+  margin: 0.25rem 0;
+}
+
+.weather-day-temp {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0.25rem 0;
+}
+
+.weather-day-condition {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.checklist-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.checklist-count-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--brand-primary);
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+.checklist-items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.checklist-item:hover {
+  background: color-mix(in srgb, var(--bg-surface-elevated) 90%, var(--brand-primary) 10%);
+  border-color: var(--border-hover);
+}
+
+.checklist-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand-primary);
+  cursor: pointer;
+  margin: 0;
+  min-height: unset;
+}
+
+.checklist-item label {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.checklist-item.item-checked {
+  opacity: 0.65;
+  background: var(--bg-surface);
+}
+
+.checklist-item.item-checked label {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* --- TAB 8: Multi-Agent Swarm Pipeline Telemetry Styles --- */
+.agent-logs-container {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.agent-logs-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2.5fr;
+  padding: 0.85rem 1.25rem;
+  background: var(--bg-surface-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.74rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.agent-logs-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.agent-log-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2.5fr;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.86rem;
+  transition: background var(--transition-fast);
+}
+
+.agent-log-row:last-child {
+  border-bottom: none;
+}
+
+.agent-log-row:hover {
+  background: var(--bg-surface-elevated);
+}
+
+.agent-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-indicator-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-indicator-dot.dot-ok {
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.status-indicator-dot.dot-running {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.status-indicator-dot.dot-error,
+.status-indicator-dot.dot-failed {
+  background-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.agent-title {
+  font-size: 0.88rem;
+  font-weight: 750;
+  color: var(--text-primary);
+  display: block;
+}
+
+.agent-sublabel {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.agent-status-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.agent-status-tag.tag-ok {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.agent-status-tag.tag-error,
+.agent-status-tag.tag-failed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.agent-duration-badge {
+  font-size: 0.78rem;
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-surface-elevated);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.agent-error-cell {
+  font-size: 0.82rem;
+}
+
+.ok-text {
+  color: var(--text-secondary);
+}
+
+.error-text {
+  color: var(--brand-danger);
+  font-weight: 600;
+}
 
 /* ==========================================================================
    Chat Assistant
@@ -2597,6 +3421,25 @@ textarea {
     flex-direction: column;
     gap: 1.25rem;
   }
+
+  .banner-source-card {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .budget-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .agent-logs-table-header {
+    display: none;
+  }
+
+  .agent-log-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
 }
 
 @media (max-width: 600px) {
@@ -2695,6 +3538,19 @@ textarea {
   .trips-filter-bar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .plan-actions-group {
+    width: 100%;
+  }
+
+  .plan-actions-group .button {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .budget-kpi-row {
+    grid-template-columns: 1fr;
   }
 
   .dashboard-cta-row .button,

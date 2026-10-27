@@ -258,7 +258,7 @@ async def _generate_concierge_reply(trip_data: dict[str, Any] | None, prompt: st
 
 if FastAPI is not None:
     app = FastAPI(title="TravelMind AI API", version="0.2.0")
-    cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000").split(",") if origin.strip()]
+    cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,http://localhost:3000").split(",") if origin.strip()]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
